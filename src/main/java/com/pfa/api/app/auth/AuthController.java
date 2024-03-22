@@ -12,8 +12,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 
-import com.pfa.api.app.JsonRsponse.JsonResponse;
-
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 
@@ -25,14 +23,14 @@ public class AuthController {
     private final AuthenticationService authenticationService;
     
     @PostMapping("/register")
-    public ResponseEntity<JsonResponse> register(@RequestBody RegisterDTO request) throws SQLIntegrityConstraintViolationException{
+    public ResponseEntity<AuthenticationResponse> register(@RequestBody RegisterDTO request) throws SQLIntegrityConstraintViolationException{
         // using this part when i want that confirmation stuff
-        authenticationService.register(request);
-        return new ResponseEntity<JsonResponse>(new JsonResponse(201,
-                "Account registered successfully , Your request will be sent to the head of the branch you're in to check you're credentials , you will get an email informing you about you're account's state."),
-                HttpStatus.CREATED);
+        // authenticationService.register(request);
+        // return new ResponseEntity<JsonResponse>(new JsonResponse(201,
+        //         "Account registered successfully , Your request will be sent to the head of the branch you're in to check you're credentials , you will get an email informing you about you're account's state."),
+        //         HttpStatus.CREATED);
 
-        // return ResponseEntity.ok(authenticationService.register(request));
+        return ResponseEntity.ok(authenticationService.register(request));
     }
 
     @PostMapping("/authenticate")

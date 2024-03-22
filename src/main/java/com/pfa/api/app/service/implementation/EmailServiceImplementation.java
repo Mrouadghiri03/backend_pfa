@@ -18,6 +18,7 @@ public class EmailServiceImplementation implements EmailService{
 
     private final JavaMailSender javaMailSender;
     private final SpringTemplateEngine templateEngine;
+    
 
     @Override
     public void sendConfirmationEmail(String name, String to, String token) {

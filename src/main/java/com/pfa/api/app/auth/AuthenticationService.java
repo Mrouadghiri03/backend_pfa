@@ -1,6 +1,7 @@
 package com.pfa.api.app.auth;
 
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -14,9 +15,11 @@ import org.springframework.stereotype.Service;
 import com.pfa.api.app.entity.Branch;
 import com.pfa.api.app.entity.user.Confirmation;
 import com.pfa.api.app.entity.user.Role;
+import com.pfa.api.app.entity.user.RoleName;
 import com.pfa.api.app.entity.user.User;
 import com.pfa.api.app.repository.BranchRepository;
 import com.pfa.api.app.repository.ConfirmationRepository;
+import com.pfa.api.app.repository.RoleRepository;
 import com.pfa.api.app.repository.UserRepository;
 import com.pfa.api.app.security.JwtService;
 import com.pfa.api.app.service.EmailService;
@@ -35,21 +38,28 @@ public class AuthenticationService {
     private final ConfirmationRepository confirmationRepository;
     private final BranchRepository branchRepository;
     private final EmailService emailService;
+    private final RoleRepository roleRepository;
+
 
     
-    public void register(RegisterDTO request) throws SQLIntegrityConstraintViolationException ,
+    public AuthenticationResponse register(RegisterDTO request) throws SQLIntegrityConstraintViolationException ,
             PropertyValueException {
+                
+        Role userRole = roleRepository.findByName(RoleName.ROLE_USER)
+                .orElseGet(() -> roleRepository.save(new Role(RoleName.ROLE_USER)));
         User user = User.builder()
             .firstName(request.getFirstName())
             .lastName(request.getLastName())
             .email(request.getEmail())
             .password(passwordEncoder.encode(request.getPassword()))
-            .roles(Role.USER.toString())
+            .roles(new ArrayList<>())
             .cin(request.getCin())
             .inscriptionNumber(request.getInscriptionNumber())
             .phoneNumber(request.getPhoneNumber())
             .enabled(false)
             .build();
+
+        user.getRoles().add(userRole);
 
         Optional<Branch> branch = branchRepository.findById(request.getStudiedBranch());
         if (branch.isPresent()) {
@@ -64,15 +74,15 @@ public class AuthenticationService {
         
 
         // using this part when i want that confirmation stuff
-        Confirmation confirmation = new Confirmation(user);
-        confirmationRepository.save(confirmation);
-        emailService.sendNotificationEmailToHeadOfBranch(headOfBranch , user ,confirmation.getToken());
+        // Confirmation confirmation = new Confirmation(user);
+        // confirmationRepository.save(confirmation);
+        // emailService.sendNotificationEmailToHeadOfBranch(headOfBranch , user ,confirmation.getToken());
 
         
-        // String jwtToken = jwtService.generateToken(user);
+        String jwtToken = jwtService.generateToken(user);
 
 
-        // return AuthenticationResponse.builder().token(jwtToken).build();
+        return AuthenticationResponse.builder().token(jwtToken).build();
     }
 
     public AuthenticationResponse authenticate(AuthenticationDTO request) {
