@@ -81,12 +81,20 @@ public class CustomExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
     
-    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ErrorResponse> handleEntityNotFoundException(AccessDeniedException ex) {
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
         ErrorResponse response = new ErrorResponse("Forbidden : ", ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
     }
+
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ErrorResponse> handleRuntimeExceptionn(RuntimeException ex) {
+        ErrorResponse response = new ErrorResponse("Error : ", ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
 
 
     public static void handleAuthenticationError(HttpServletResponse response, String errorMessage) throws IOException {

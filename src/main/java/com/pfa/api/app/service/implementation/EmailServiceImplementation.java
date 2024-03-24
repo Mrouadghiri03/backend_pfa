@@ -2,10 +2,12 @@ package com.pfa.api.app.service.implementation;
 
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
+import com.pfa.api.app.entity.Project;
 import com.pfa.api.app.entity.user.User;
 import com.pfa.api.app.service.EmailService;
 
@@ -21,6 +23,7 @@ public class EmailServiceImplementation implements EmailService{
     
 
     @Override
+    @Async
     public void sendConfirmationEmail(String name, String to, String token) {
         try {
             MimeMessage mimeMessage = javaMailSender.createMimeMessage();
@@ -44,6 +47,7 @@ public class EmailServiceImplementation implements EmailService{
     }
 
     @Override
+    @Async
     public void sendNotificationEmailToHeadOfBranch(User headOfBranch, User newUser,String token) {
         try {
             MimeMessage mimeMessage = javaMailSender.createMimeMessage();
@@ -75,6 +79,7 @@ public class EmailServiceImplementation implements EmailService{
     }
 
 	@Override
+    @Async
 	public void sendRejectionEmail(User to, String token) {
 		try {
             MimeMessage mimeMessage = javaMailSender.createMimeMessage();
@@ -87,7 +92,8 @@ public class EmailServiceImplementation implements EmailService{
             context.setVariable("name", to.getFirstName());
             System.out.println(to.getStudiedBranch().getName());
             context.setVariable("branch", to.getStudiedBranch().getName() );
-                                                                                                            
+            
+                                                                                                         
             String htmlContent = templateEngine.process("email/emailRejectionTemplate", context);
             helper.setText(htmlContent, true);
             javaMailSender.send(mimeMessage);
@@ -98,6 +104,37 @@ public class EmailServiceImplementation implements EmailService{
         }
 
 	}
+
+    @SuppressWarnings("null")
+    @Override
+    @Async
+    public void sendProjectApprovalEmail(Project project) {
+        try {
+            MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+            System.out.println(project.getBranch().getHeadOfBranch().getEmail());
+            helper.setTo(project.getBranch().getHeadOfBranch().getEmail());
+            helper.setSubject("Project Approval");
+
+            Context context = new Context();
+            context.setVariable("headOfBranch", project.getBranch().getHeadOfBranch().getFirstName());
+            System.out.println(project.getBranch().getHeadOfBranch().getBranch().getName());
+            context.setVariable("branch", project.getBranch().getName());
+            context.setVariable("supervisor", project.getSupervisors().get(0).getFirstName() + " "
+                                    +project.getSupervisors().get(0).getLastName());
+
+            context.setVariable("acceptURL", "http://localhost:8080/api/projects/accept?token="+project.getApprovalToken() );
+            context.setVariable("rejectURL", "http://localhost:8080/api/projects/reject?token=" +project.getApprovalToken());
+
+            String htmlContent = templateEngine.process("email/emailProjectApprovalTemplate", context);
+            helper.setText(htmlContent, true);
+            javaMailSender.send(mimeMessage);
+
+        } catch (Exception e) {
+            System.out.println("message : " + e.getMessage());
+            System.out.println("cause : " + e.getCause());
+        }
+    }
 
 
     

@@ -23,6 +23,7 @@ public class SecurityConfig {
 
     private static final String[] WHITE_LIST = {
         "/api/auth/*",
+        "/api/projects/accept*",
         "/swagger-ui.html",
         "/swagger-ui/*",
         "/v3/api-docs/*",

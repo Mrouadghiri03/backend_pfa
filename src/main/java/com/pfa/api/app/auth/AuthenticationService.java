@@ -56,7 +56,7 @@ public class AuthenticationService {
             .cin(request.getCin())
             .inscriptionNumber(request.getInscriptionNumber())
             .phoneNumber(request.getPhoneNumber())
-            .enabled(false)
+            .enabled(true)
             .build();
 
         user.getRoles().add(userRole);

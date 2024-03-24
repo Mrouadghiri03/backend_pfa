@@ -1,6 +1,5 @@
 package com.pfa.api.app.entity.user;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -31,10 +30,12 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Builder
 @AllArgsConstructor
@@ -95,11 +96,9 @@ public class User implements UserDetails{
     @ManyToMany(mappedBy = "profs")
     private List<Branch> branches;
     
-
-
     @ManyToMany(mappedBy = "supervisors")
     @JsonIgnore
-    private List<Project>  projets ;
+    private List<Project>  projects ;
 
 
     @Override
@@ -138,6 +137,14 @@ public class User implements UserDetails{
     public boolean isEnabled() {
         return enabled;
     }
+
+    // @Override
+    // public int hashCode() {
+    //     final int prime = 31;
+    //     int result = 1;
+    //     result = prime * result + ((email == null) ? 0 : email.hashCode());
+    //     return result;
+    // }
 
 
 
