@@ -3,7 +3,6 @@ package com.pfa.api.app.dto;
 import java.util.Date;
 import java.util.List;
 
-import jakarta.persistence.Column;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,7 +12,6 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-
 public class ProjectDTO {
 
 
@@ -28,6 +26,10 @@ public class ProjectDTO {
     private String techStack;
 
     private String codeLink;
+
+    private Boolean isPublic;
+
+    private Long branch;
 
     private List<Date> dueDates;
 

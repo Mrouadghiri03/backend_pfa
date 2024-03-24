@@ -4,7 +4,7 @@
 
   <meta charset="utf-8">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
-  <title>Email User Verification</title>
+  <title>Email Project Validation</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style type="text/css">
   /**
@@ -147,14 +147,7 @@
             <td align="left" bgcolor="#ffffff" style="padding: 24px; font-family: 'Source Sans Pro', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 24px;">
               <!-- User Information -->
               <p style="margin: 0;">Hello <strong th:text="${headOfBranch}"></strong>,</p>
-              <p style="margin: 0;">A new user from the branch your're head on has created an account in the app, and you need to verify if they are who they claim to be:</p>
-              <ul>
-                <li>User Name : <strong th:text="${userName}"></strong></li>
-                <li>Email : <strong th:text="${email}"></strong></li>
-                <li>Phone Number : <strong th:text="${phoneNumber}"></strong></li>
-                <li>CIN :<strong th:text="${cin}"></strong></li>
-                <li>Inscription Number : <strong th:text="${inscriptionNumber}"></strong></li>
-              </ul>
+              <p style="margin: 0;">A new project has been proposed by supervisor <strong th:text="${supervisor}"></strong> ,int the <strong th:text="${branch}"></strong> branch and its up to you weather to approve it or not :</p>
             </td>
           </tr>
         </table>
