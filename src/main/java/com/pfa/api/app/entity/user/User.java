@@ -6,7 +6,9 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
 import com.pfa.api.app.entity.Branch;
@@ -71,10 +73,15 @@ public class User implements UserDetails{
     private String password;
     
     @ManyToMany(fetch = FetchType.EAGER)
+<<<<<<< HEAD
+    @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
+    @JsonIgnore
+=======
     @JoinTable(
         name = "user_roles",
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "role_id"))
+>>>>>>> parent of ae32e42 (adding the ability to create team ans assign members to it)
     private List<Role> roles;
     
     @Column(name = "enabled")
@@ -82,9 +89,11 @@ public class User implements UserDetails{
 
     @ManyToOne(targetEntity = Branch.class)
     @JoinColumn(name = "branch_id")
+    @JsonIgnore
     private Branch studiedBranch;
     
     @OneToOne(mappedBy = "headOfBranch")
+    @JsonIgnore
     private Branch branch;
 
     @OneToOne(mappedBy = "user")
@@ -97,6 +106,17 @@ public class User implements UserDetails{
     @JsonIgnore
     private List<Project>  projects ;
 
+<<<<<<< HEAD
+    @ManyToOne(targetEntity = Team.class)
+    @JoinColumn(name = "team_id")
+    @JsonIgnore
+    private Team team;
+
+    @OneToOne(mappedBy = "responsible")
+    @JsonIgnore
+    private Team teamInResponsibility;
+=======
+>>>>>>> parent of ae32e42 (adding the ability to create team ans assign members to it)
 
     @Override
    public Collection<GrantedAuthority> getAuthorities() {
@@ -144,6 +164,10 @@ public class User implements UserDetails{
     //     return result;
     // }
 
+<<<<<<< HEAD
+}
+=======
 
 
 }
+>>>>>>> parent of ae32e42 (adding the ability to create team ans assign members to it)
