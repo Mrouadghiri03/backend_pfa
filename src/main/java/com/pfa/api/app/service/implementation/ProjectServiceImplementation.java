@@ -172,14 +172,10 @@ public class ProjectServiceImplementation implements ProjectService {
     ///
     @Override
     public String submitProjectPreference(Map<Long, Integer> projectPreferences) throws NotFoundException {
-        Optional<User> optionalUser = userRepository.findById(UserUtils.getCurrentUser(userRepository).getId());
-
-        if (optionalUser.isEmpty()) {
-            throw new RuntimeException("User not found");
+        User user = UserUtils.getCurrentUser(userRepository);
+        if (projectPreferenceRepository.findPreferenceByUser(user).isPresent()) {
+            throw new RuntimeException("you already made your choice");
         }
-
-        User user = optionalUser.get();
-
         TeamPreference teamPreference = new TeamPreference();
         teamPreference.setUser(user);
         teamPreference.setProjectPreferenceRanks(projectPreferences);

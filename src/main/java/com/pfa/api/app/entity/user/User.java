@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
 import com.pfa.api.app.entity.Branch;
 import com.pfa.api.app.entity.Project;
+import com.pfa.api.app.entity.Team;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -73,15 +74,10 @@ public class User implements UserDetails{
     private String password;
     
     @ManyToMany(fetch = FetchType.EAGER)
-<<<<<<< HEAD
-    @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
-    @JsonIgnore
-=======
     @JoinTable(
         name = "user_roles",
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "role_id"))
->>>>>>> parent of ae32e42 (adding the ability to create team ans assign members to it)
     private List<Role> roles;
     
     @Column(name = "enabled")
@@ -106,7 +102,6 @@ public class User implements UserDetails{
     @JsonIgnore
     private List<Project>  projects ;
 
-<<<<<<< HEAD
     @ManyToOne(targetEntity = Team.class)
     @JoinColumn(name = "team_id")
     @JsonIgnore
@@ -115,8 +110,6 @@ public class User implements UserDetails{
     @OneToOne(mappedBy = "responsible")
     @JsonIgnore
     private Team teamInResponsibility;
-=======
->>>>>>> parent of ae32e42 (adding the ability to create team ans assign members to it)
 
     @Override
    public Collection<GrantedAuthority> getAuthorities() {
@@ -164,10 +157,4 @@ public class User implements UserDetails{
     //     return result;
     // }
 
-<<<<<<< HEAD
 }
-=======
-
-
-}
->>>>>>> parent of ae32e42 (adding the ability to create team ans assign members to it)

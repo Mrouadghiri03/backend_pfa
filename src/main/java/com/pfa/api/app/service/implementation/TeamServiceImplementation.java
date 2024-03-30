@@ -18,19 +18,15 @@ import com.pfa.api.app.service.TeamService;
 import com.pfa.api.app.service.UserService;
 import com.pfa.api.app.util.UserUtils;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class TeamServiceImplementation implements TeamService {
-    @Autowired
-    private TeamRepository teamRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    UserService userService;
+    private final TeamRepository teamRepository;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final UserService userService;
 
     @Override
     public Team createTeam(TeamDTO teamDTO) throws NotFoundException {
