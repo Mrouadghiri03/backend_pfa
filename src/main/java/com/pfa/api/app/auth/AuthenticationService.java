@@ -47,6 +47,11 @@ public class AuthenticationService {
                 
         Role userRole = roleRepository.findByName(RoleName.ROLE_USER)
                 .orElseGet(() -> roleRepository.save(new Role(RoleName.ROLE_USER)));
+
+        Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
+        if (existingUser.isPresent()) {
+            throw new SQLIntegrityConstraintViolationException("E-mail address already in use.");
+        }
         User user = User.builder()
             .firstName(request.getFirstName())
             .lastName(request.getLastName())

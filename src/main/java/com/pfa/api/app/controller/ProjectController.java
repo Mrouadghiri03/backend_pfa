@@ -25,6 +25,8 @@ import org.springframework.web.servlet.ModelAndView;
 import com.pfa.api.app.JsonRsponse.JsonResponse;
 import com.pfa.api.app.dto.ProjectDTO;
 import com.pfa.api.app.entity.Project;
+import com.pfa.api.app.entity.user.TeamPreference;
+import com.pfa.api.app.entity.user.User;
 import com.pfa.api.app.service.ProjectService;
 
 import lombok.RequiredArgsConstructor;
@@ -39,16 +41,17 @@ public class ProjectController {
     @PreAuthorize("hasRole('ROLE_SUPERVISOR')")
     @PostMapping
     public ResponseEntity<JsonResponse> createNewProject(@ModelAttribute ProjectDTO projectDTO,
-                                                         @RequestParam("files") List<MultipartFile> files) throws AccessDeniedException, NotFoundException {
+                                                         @RequestParam("files") List<MultipartFile> files,
+                                                         @RequestParam("report") MultipartFile report) throws AccessDeniedException, NotFoundException {
 
-        Project project = projectService.addProject(projectDTO, files);
+        Project project = projectService.addProject(projectDTO, files,report);
         return new ResponseEntity<JsonResponse>(
                 new JsonResponse(201, "Project has been created successfully!"), HttpStatus.CREATED);
     }
 
     @GetMapping
     public ResponseEntity<List<Project>> getProjects() throws NotFoundException {
-        List<Project> projects = projectService.getAllProject();
+        List<Project> projects = projectService.getAllProjects();
 
         return ResponseEntity.ok(projects);
     }
@@ -63,12 +66,13 @@ public class ProjectController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_SUPERVISOR')")
-    public ResponseEntity<JsonResponse> updateProject(@RequestBody ProjectDTO projectDTO, @PathVariable long id) throws NotFoundException {
+    public ResponseEntity<JsonResponse> updateProject(@RequestBody ProjectDTO projectDTO, @PathVariable long id,
+            @RequestParam("files") List<MultipartFile> files,
+            @RequestParam("report") MultipartFile report) throws NotFoundException {
 
-        projectService.updateProject(projectDTO, id);
+        projectService.updateProject(projectDTO, id ,files,report);
         return new ResponseEntity<JsonResponse>(
                 new JsonResponse(201, "Project has been Updated successfully!"), HttpStatus.OK);
-
     }
 
     @DeleteMapping("/{id}/docs/{docId}")
@@ -99,5 +103,25 @@ public class ProjectController {
     public ResponseEntity<String> submitProjectPreference(@RequestBody Map<Long, Integer> projectPreferences) throws NotFoundException {
         String message = projectService.submitProjectPreference(projectPreferences);
         return ResponseEntity.ok(message);
+    }
+
+    @GetMapping("/preferences")
+    public ResponseEntity<List<TeamPreference>> getProjectPreference() throws NotFoundException {
+        return new ResponseEntity<List<TeamPreference>>(projectService.getAllProjectsPreferences(), HttpStatus.OK);
+    }
+
+    @PostMapping("/assign")
+    @PreAuthorize("hasRole('ROLE_HEAD_OF_BRANCH')")
+    public ResponseEntity<JsonResponse> assignUsersToProjects() throws NotFoundException{
+        projectService.assignUsersToProjects();
+       return new ResponseEntity<>(new JsonResponse(200, "the assignment presses is done , please review it and then validate it!"), HttpStatus.OK);
+    }
+
+    @PostMapping("/assign/validate")
+    @PreAuthorize("hasRole('ROLE_HEAD_OF_BRANCH')")
+    public  ResponseEntity<JsonResponse> validateAssignments() throws NotFoundException{
+        projectService.validateAssignments();
+        return new ResponseEntity<JsonResponse>(
+            new JsonResponse(200, "projects are now assigned to teams"), HttpStatus.OK);
     }
 }

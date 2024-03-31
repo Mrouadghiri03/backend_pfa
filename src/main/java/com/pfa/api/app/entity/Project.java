@@ -60,6 +60,11 @@ public class Project {
     @JsonIgnore
     private String approvalToken;
 
+    @OneToOne
+    @JoinColumn(name = "report_id")
+    @JsonManagedReference
+    private Document report;
+
     @ManyToOne(targetEntity = Branch.class)
     @JoinColumn(name="branch_id")
     @JsonBackReference
@@ -76,6 +81,10 @@ public class Project {
     @OneToMany(mappedBy = "project" , fetch = FetchType.EAGER)
     @JsonManagedReference
     private List<Document> documents;
+
+    @OneToOne
+    @JoinColumn(name = "team_id")
+    private Team team;
          
         
 
