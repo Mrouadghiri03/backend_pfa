@@ -136,6 +136,29 @@ public class EmailServiceImplementation implements EmailService{
         }
     }
 
+    @Override
+    @Async
+    public void sendInformingEmail(User to, String message) {
+        try {
+            MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+
+            helper.setTo(to.getEmail());
+            helper.setSubject("Information");
+
+            Context context = new Context();
+            context.setVariable("name", to.getFirstName());
+            context.setVariable("message", message);
+
+            String htmlContent = templateEngine.process("email/emailInformingTemplate", context);
+            helper.setText(htmlContent, true);
+            javaMailSender.send(mimeMessage);
+
+        } catch (Exception e) {
+            System.out.println("message : " + e.getMessage());
+            System.out.println("cause : " + e.getCause());
+        }
+    }
 
     
 

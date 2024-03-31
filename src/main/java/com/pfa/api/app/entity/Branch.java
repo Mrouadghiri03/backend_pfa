@@ -2,6 +2,7 @@ package com.pfa.api.app.entity;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.pfa.api.app.entity.user.User;
 
@@ -42,9 +43,11 @@ public class Branch {
 
     @OneToOne(targetEntity = User.class)
     @JoinColumn(name = "head_of_branch_id" )
+    @JsonBackReference
     private User headOfBranch;
 
     @OneToMany(mappedBy = "studiedBranch")
+    @JsonBackReference
     private List<User> students;
 
     @ManyToMany(cascade = CascadeType.ALL)

@@ -2,7 +2,6 @@ package com.pfa.api.app.entity;
 
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,10 +14,12 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
@@ -38,7 +39,11 @@ public class Document {
     private Integer fileSize;
 
     @ManyToOne(targetEntity = Project.class)
-    @JoinColumn(name = "project_id", nullable = false)
+    @JoinColumn(name = "project_id")
     @JsonBackReference
     private Project project;
+
+    @OneToOne(mappedBy = "report")
+    @JsonBackReference
+    private Project reportOf;
 }

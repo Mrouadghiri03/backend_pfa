@@ -70,6 +70,7 @@ public class TeamServiceImplementation implements TeamService {
         return persistedTeam;
     }
 
+    @SuppressWarnings("null")
     @Override
     public void deleteTeamById(Long teamId) {
         teamRepository.deleteById(teamId);

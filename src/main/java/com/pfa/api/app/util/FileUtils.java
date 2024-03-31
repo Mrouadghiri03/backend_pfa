@@ -86,4 +86,24 @@ public class FileUtils {
             throw new RuntimeException("Failed to store files", e);
         }
     }
+    @SuppressWarnings("null")
+    public  void saveReport(MultipartFile report, Project project , String DIRECTORY ,DocumentRepository documentRepository) {
+        try {
+            Path projectDirectory = createProjectDirectory(DIRECTORY,project.getId());
+                String fileName = FileUtils.generateUniqueFileName(report.getOriginalFilename());
+                byte[] compressedFile = FileUtils.compressFile(report.getBytes());
+                Path fileStorage = projectDirectory.resolve(fileName + ".gz");
+                Files.write(fileStorage, compressedFile);
+                Document document = Document.builder()
+                        .docName(fileName)
+                        .fileSize(compressedFile.length)
+                        .reportOf(project)
+                        .build();
+            documentRepository.save(document);
+            project.setReport(document);
+
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to store files", e);
+        }
+    }
 }

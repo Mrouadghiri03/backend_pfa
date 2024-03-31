@@ -8,4 +8,5 @@ public interface EmailService {
     void sendRejectionEmail(User to,String token);
     void sendNotificationEmailToHeadOfBranch(User headOfBranchName , User to,String token);
     void sendProjectApprovalEmail(Project project);
+    void sendInformingEmail(User to, String message);
 }

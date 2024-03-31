@@ -1,6 +1,9 @@
 package com.pfa.api.app.entity.user;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -8,7 +11,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
 import com.pfa.api.app.entity.Branch;
@@ -57,16 +60,16 @@ public class User implements UserDetails{
     @Column(name = "last_name")
     private String lastName;
 
-    @Column(name = "email" , nullable = false)
+    @Column(name = "email" , nullable = false ,unique = true)
     private String email;
 
     @Column(name = "phone_number" )
     private String phoneNumber;
 
-    @Column(name = "cin" )
+    @Column(name = "cin" ,unique = true )
     private String cin;
 
-    @Column(name = "inscription_number" )
+    @Column(name = "inscription_number" ,unique = true)
     private String inscriptionNumber;
 
     @Column(name = "password")
@@ -74,6 +77,7 @@ public class User implements UserDetails{
     private String password;
     
     @ManyToMany(fetch = FetchType.EAGER)
+    @JsonIgnore
     @JoinTable(
         name = "user_roles",
         joinColumns = @JoinColumn(name = "user_id"),
@@ -85,11 +89,11 @@ public class User implements UserDetails{
 
     @ManyToOne(targetEntity = Branch.class)
     @JoinColumn(name = "branch_id")
-    @JsonIgnore
+    @JsonManagedReference
     private Branch studiedBranch;
     
     @OneToOne(mappedBy = "headOfBranch")
-    @JsonIgnore
+    @JsonManagedReference
     private Branch branch;
 
     @OneToOne(mappedBy = "user")
@@ -104,11 +108,11 @@ public class User implements UserDetails{
 
     @ManyToOne(targetEntity = Team.class)
     @JoinColumn(name = "team_id")
-    @JsonIgnore
+    @JsonBackReference
     private Team team;
 
     @OneToOne(mappedBy = "responsible")
-    @JsonIgnore
+    @JsonBackReference
     private Team teamInResponsibility;
 
     @Override

@@ -3,12 +3,16 @@ package com.pfa.api.app.service.implementation;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.pfa.api.app.entity.user.TeamPreference;
-import com.pfa.api.app.repository.*;
-import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.security.access.AccessDeniedException;
@@ -19,9 +23,16 @@ import com.pfa.api.app.dto.ProjectDTO;
 import com.pfa.api.app.entity.Branch;
 import com.pfa.api.app.entity.Document;
 import com.pfa.api.app.entity.Project;
+import com.pfa.api.app.entity.user.TeamPreference;
 import com.pfa.api.app.entity.user.User;
+import com.pfa.api.app.repository.BranchRepository;
+import com.pfa.api.app.repository.DocumentRepository;
+import com.pfa.api.app.repository.ProjectPreferenceRepository;
+import com.pfa.api.app.repository.ProjectRepository;
+import com.pfa.api.app.repository.UserRepository;
 import com.pfa.api.app.service.ProjectService;
 import com.pfa.api.app.util.FileUtils;
+import com.pfa.api.app.util.ProjectUtils;
 import com.pfa.api.app.util.UserUtils;
 
 import lombok.RequiredArgsConstructor;
@@ -43,7 +54,7 @@ public class ProjectServiceImplementation implements ProjectService {
 
     @SuppressWarnings("null")
     @Override
-    public Project addProject(ProjectDTO projectDTO, List<MultipartFile> files)
+    public Project addProject(ProjectDTO projectDTO, List<MultipartFile> files,MultipartFile report)
             throws NotFoundException, AccessDeniedException {
         User owner = UserUtils.getCurrentUser(userRepository);
         Branch branch = branchRepository.findById(projectDTO.getBranch()).get();
@@ -61,13 +72,17 @@ public class ProjectServiceImplementation implements ProjectService {
                 .status(projectDTO.getStatus())
                 .branch(branch)
                 .approvalToken(UUID.randomUUID().toString())
-                .isPublic(false)
+                .isPublic(true)// false when i activate the email validation stuff
                 .build();
 
         Project savedProject = projectRepository.save(project);
 
         if (!files.isEmpty()) {
             FileUtils.saveDocuments(files, savedProject, DIRECTORY, documentRepository);
+        }
+        if (!report.isEmpty()) {
+            FileUtils.saveReport(report, savedProject, DIRECTORY, documentRepository);
+            return  projectRepository.save(savedProject);
         }
 
 
@@ -84,7 +99,7 @@ public class ProjectServiceImplementation implements ProjectService {
     }
 
     @Override
-    public List<Project> getAllProject() throws NotFoundException {
+    public List<Project> getAllProjects() throws NotFoundException {
         User currentUser = UserUtils.getCurrentUser(userRepository);
         Boolean isHeadOfBranch = UserUtils.isHeadOfBranch(currentUser);
         return isHeadOfBranch == true ? projectRepository.findAll() : projectRepository.findByIsPublicTrue();
@@ -92,9 +107,8 @@ public class ProjectServiceImplementation implements ProjectService {
 
     @SuppressWarnings("null")
     @Override
-    public Project updateProject(ProjectDTO projectDTO, Long id) throws NotFoundException {
-        Optional<Project> optionalProject = projectRepository.findById(id);
-        Project project = optionalProject.orElseThrow(NotFoundException::new);
+    public Project updateProject(ProjectDTO projectDTO, Long id,List<MultipartFile> files,MultipartFile report) throws NotFoundException {
+        Project project = projectRepository.findById(id).orElseThrow(NotFoundException::new);
 
         if (projectDTO.getDescription() != null) {
             project.setDescription(projectDTO.getDescription());
@@ -114,6 +128,18 @@ public class ProjectServiceImplementation implements ProjectService {
         if (projectDTO.getDueDates() != null) {
             project.setDueDates(projectDTO.getDueDates());
         }
+        if (!files.isEmpty()) {
+            FileUtils.saveDocuments(files, project, DIRECTORY, documentRepository);
+        }
+        if (!report.isEmpty()){
+            if (project.getReport() == null) {
+                FileUtils.saveReport(report, project, DIRECTORY, documentRepository);
+                
+            }else{
+                return deleteFile(id, project.getReport().getId());
+            }
+        }
+
 
         projectRepository.save(project);
         return project;
@@ -182,10 +208,76 @@ public class ProjectServiceImplementation implements ProjectService {
 
         projectPreferenceRepository.save(teamPreference);
 
-        //(#)this one will be replaced with Project theHead_of_branch will choose for thi group!
-        //for now we return an mpty project till (#) will be done
     return "Team preferences submitted successfully !!";
     }
+
+    @Override
+    public List<TeamPreference> getAllProjectsPreferences() {
+        List<TeamPreference> projectsPreferences = projectPreferenceRepository.findAll();
+        Set<Entry<Long, Integer>> sets = projectsPreferences.get(0).getProjectPreferenceRanks().entrySet();
+        for (Entry<Long, Integer> entry : sets) {
+            System.out.println(entry.getValue());
+        }
+        return projectPreferenceRepository.findAll();
+    }
+
+    @Override
+    public Map<User, Project> assignUsersToProjects() throws NotFoundException {
+        return ProjectUtils.assignTeamsToProjects(getAllProjectsPreferences()
+            ,userRepository
+            ,projectPreferenceRepository
+            ,projectRepository);
+    }
+
+    @Override
+    public void validateAssignments() throws NotFoundException {
+        List<TeamPreference> allPreferences = getAllProjectsPreferences();
+        Map<User, Project> assignedProjects = ProjectUtils.assignTeamsToProjects(getAllProjectsPreferences(),
+                userRepository, projectPreferenceRepository, projectRepository);
+        List<Project> projects = new ArrayList<>();
+        List<User> responsibleUsers = new ArrayList<>();
+
+        for (Entry<User, Project> assignment : assignedProjects.entrySet()) {
+            Project project = assignment.getValue();
+            User user = assignment.getKey();
+
+            project.setTeam(user.getTeam());
+            user.getTeam().setProject(project);
+
+            projects.add(project);
+            responsibleUsers.add(user);
+
+            // Send email to the members
+            // for (User member : user.getTeam().getMembers()) {
+            //     String userMessage = "Dear " + member.getFirstName() + ",\n\n";
+            //     userMessage += "Your team have been assigned to the project: " + project.getTitle() +" .\n";
+            //     userMessage += "Please review the details and get started as soon as possible.\n\n";
+            //     userMessage += "Best regards,\nThe Project Management Team";
+
+            //     // Send email to the user
+            //     emailService.sendInformingEmail(member, userMessage);
+            // }
+
+
+            // Send email to the supervisors
+            // for (User supervisor : project.getSupervisors()) {
+            //     String supervisorMessage = "Dear " + supervisor.getFirstName() + ",\n\n";
+            //     supervisorMessage += user.getTeam().getName() + " has been assigned to the project: " + project.getTitle()
+            //             + ".\n";
+            //     supervisorMessage += "Please ensure proper guidance and support for the assigned project.\n\n";
+            //     supervisorMessage += "Best regards,\nThe Project Management Team";
+            //     emailService.sendInformingEmail(supervisor, supervisorMessage);
+            // }
+        }
+
+        // Save projects and users
+        projectRepository.saveAll(projects);
+        userRepository.saveAll(responsibleUsers);
+    }
+
+
+
+
 }
 
 
