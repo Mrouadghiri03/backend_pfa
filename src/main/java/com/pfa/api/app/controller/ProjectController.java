@@ -80,15 +80,11 @@ public class ProjectController {
 
         return new ResponseEntity<>(projectService.deleteFile(id, docId), HttpStatus.OK);
     }
-    @GetMapping("/{projectId}/docs/{docId}")
+    @GetMapping("/{projectId}/docs/{docId}/download")
     public ResponseEntity<byte[]> downloadFile(@PathVariable Long projectId, @PathVariable Long docId) throws NotFoundException, IOException {
         return projectService.downloadFile(projectId, docId);
     }
 
-    @GetMapping("/{projectId}/docs/{docId}")
-    public ResponseEntity<byte[]> getFile(@PathVariable Long projectId, @PathVariable Long docId) throws NotFoundException, IOException {
-        return projectService.downloadFile(projectId, docId);
-    }
 
 
     @GetMapping("/accept")
