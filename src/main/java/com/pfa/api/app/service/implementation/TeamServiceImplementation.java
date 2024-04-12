@@ -7,7 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.stereotype.Service;
 
-import com.pfa.api.app.dto.TeamDTO;
+import com.pfa.api.app.dto.requests.TeamDTO;
+import com.pfa.api.app.dto.responses.TeamResponseDTO;
 import com.pfa.api.app.entity.Team;
 import com.pfa.api.app.entity.user.RoleName;
 import com.pfa.api.app.entity.user.User;
@@ -29,7 +30,7 @@ public class TeamServiceImplementation implements TeamService {
     private final UserService userService;
 
     @Override
-    public Team createTeam(TeamDTO teamDTO) throws NotFoundException {
+    public TeamResponseDTO createTeam(TeamDTO teamDTO) throws NotFoundException {
         // Obtenir l'utilisateur actuel en utilisant UserUtils
         User currentUser = UserUtils.getCurrentUser(userRepository);
         if (currentUser.getTeam() != null) {
@@ -67,7 +68,7 @@ public class TeamServiceImplementation implements TeamService {
         userRepository.saveAll(members);
 
         // Enregistrer l'équipe dans la base de données
-        return persistedTeam;
+        return TeamResponseDTO.fromEntity(persistedTeam);
     }
 
     @SuppressWarnings("null")
@@ -85,7 +86,7 @@ public class TeamServiceImplementation implements TeamService {
     }
 
     @Override
-    public Team updateTeam(Long teamId, TeamDTO teamDTO) throws NotFoundException {
+    public TeamResponseDTO updateTeam(Long teamId, TeamDTO teamDTO) throws NotFoundException {
         // Récupérer l'équipe à modifier de la base de données
         Team existingTeam = teamRepository.findById(teamId).orElseThrow(NotFoundException::new);
 
@@ -141,7 +142,7 @@ public class TeamServiceImplementation implements TeamService {
         existingTeam.setResponsible(newResponsible);
         existingTeam.setName(teamDTO.getName());
         // Enregistrer les modifications dans la base de données
-        return teamRepository.save(existingTeam);
+        return TeamResponseDTO.fromEntity(teamRepository.save(existingTeam));
     }
 
     // Méthode pour vérifier si un utilisateur appartient déjà à d'autres équipes
@@ -151,17 +152,25 @@ public class TeamServiceImplementation implements TeamService {
     }
 
     @Override
-    public Team getTeamById(Long teamId) {
-        return teamRepository.findById(teamId).orElse(null);
+    public TeamResponseDTO getTeamById(Long teamId) {
+        Team team=  teamRepository.findById(teamId).orElse(null);
+        return TeamResponseDTO.fromEntity(team);
     }
 
     @Override
-    public Team getTeamByName(String teamName) {
-        return teamRepository.findByName(teamName);
+    public TeamResponseDTO getTeamByName(String teamName) {
+        Team team = teamRepository.findByName(teamName);
+        return TeamResponseDTO.fromEntity(team);
     }
 
     @Override
-    public List<Team> getAllTeams() {
-        return teamRepository.findAll();
+    public List<TeamResponseDTO> getAllTeams() {
+        List<Team> teams = teamRepository.findAll();
+        List<TeamResponseDTO> teamResponseDTOs = new ArrayList<>();
+        for (Team team : teams) {
+            TeamResponseDTO teamResponseDTO = TeamResponseDTO.fromEntity(team);
+            teamResponseDTOs.add(teamResponseDTO);
+        }
+        return teamResponseDTOs;
     }
 }

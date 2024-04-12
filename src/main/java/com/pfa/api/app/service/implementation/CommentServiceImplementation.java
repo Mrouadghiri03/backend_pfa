@@ -8,7 +8,7 @@ import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
-import com.pfa.api.app.dto.CommentDTO;
+import com.pfa.api.app.dto.requests.CommentDTO;
 import com.pfa.api.app.entity.Comment;
 import com.pfa.api.app.entity.Document;
 import com.pfa.api.app.entity.user.User;

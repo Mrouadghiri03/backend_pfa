@@ -14,6 +14,7 @@ import java.util.zip.GZIPOutputStream;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.tika.Tika;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.pfa.api.app.entity.Document;
@@ -104,6 +105,20 @@ public class FileUtils {
 
         } catch (IOException e) {
             throw new RuntimeException("Failed to store files", e);
+        }
+    }
+
+    public static ResponseEntity<byte[]> downloadFile(Project project, Document document, String dIRECTORY) {
+        try {
+            Path projectDirectory = createProjectDirectory(dIRECTORY,project.getId());
+            Path fileStorage = projectDirectory.resolve(document.getDocName() + ".gz");
+            byte[] compressedFile = Files.readAllBytes(fileStorage);
+            byte[] decompressedFile = FileUtils.decompressFile(compressedFile);
+            return ResponseEntity.ok()
+                    .header("Content-Disposition", "attachment; filename=" + document.getDocName())
+                    .body(decompressedFile);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to download file", e);
         }
     }
 }

@@ -15,11 +15,13 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.pfa.api.app.dto.ProjectDTO;
+import com.pfa.api.app.dto.requests.ProjectDTO;
+import com.pfa.api.app.dto.responses.ProjectResponseDTO;
 import com.pfa.api.app.entity.Branch;
 import com.pfa.api.app.entity.Document;
 import com.pfa.api.app.entity.Project;
@@ -54,7 +56,7 @@ public class ProjectServiceImplementation implements ProjectService {
 
     @SuppressWarnings("null")
     @Override
-    public Project addProject(ProjectDTO projectDTO, List<MultipartFile> files,MultipartFile report)
+    public ProjectResponseDTO addProject(ProjectDTO projectDTO, List<MultipartFile> files,MultipartFile report)
             throws NotFoundException, AccessDeniedException {
         User owner = UserUtils.getCurrentUser(userRepository);
         Branch branch = branchRepository.findById(projectDTO.getBranch()).get();
@@ -82,32 +84,36 @@ public class ProjectServiceImplementation implements ProjectService {
         }
         if (!report.isEmpty()) {
             FileUtils.saveReport(report, savedProject, DIRECTORY, documentRepository);
-            return  projectRepository.save(savedProject);
+            return  ProjectResponseDTO.fromEntity(projectRepository.save(savedProject));
         }
 
 
         // email shit for the project approval
         // emailService.sendProjectApprovalEmail(savedProject);
-        return savedProject;
+        return ProjectResponseDTO.fromEntity(savedProject);
     }
 
     @SuppressWarnings("null")
     @Override
-    public Project getProject(Long id) throws NotFoundException {
+    public ProjectResponseDTO getProject(Long id) throws NotFoundException {
         Optional<Project> projectOptional = projectRepository.findById(id);
-        return projectOptional.orElseThrow(() -> new NotFoundException());
+        return ProjectResponseDTO.fromEntity(projectOptional.orElseThrow(() -> new NotFoundException()));
     }
 
     @Override
-    public List<Project> getAllProjects() throws NotFoundException {
+    public List<ProjectResponseDTO> getAllProjects() throws NotFoundException {
         User currentUser = UserUtils.getCurrentUser(userRepository);
         Boolean isHeadOfBranch = UserUtils.isHeadOfBranch(currentUser);
-        return isHeadOfBranch == true ? projectRepository.findAll() : projectRepository.findByIsPublicTrue();
+        return isHeadOfBranch == true ? projectRepository.findAll().stream()
+                .map(ProjectResponseDTO::fromEntity)
+                .collect(Collectors.toList()) : projectRepository.findByIsPublicTrue().stream()
+                .map(ProjectResponseDTO::fromEntity)
+                .collect(Collectors.toList());
     }
 
     @SuppressWarnings("null")
     @Override
-    public Project updateProject(ProjectDTO projectDTO, Long id,List<MultipartFile> files,MultipartFile report) throws NotFoundException {
+    public ProjectResponseDTO updateProject(ProjectDTO projectDTO, Long id,List<MultipartFile> files,MultipartFile report) throws NotFoundException {
         Project project = projectRepository.findById(id).orElseThrow(NotFoundException::new);
 
         if (projectDTO.getDescription() != null) {
@@ -142,13 +148,13 @@ public class ProjectServiceImplementation implements ProjectService {
 
 
         projectRepository.save(project);
-        return project;
+        return ProjectResponseDTO.fromEntity(project);
 
     }
 
     @SuppressWarnings("null")
     @Override
-    public Project deleteFile(Long id, Long docId) throws NotFoundException {
+    public ProjectResponseDTO deleteFile(Long id, Long docId) throws NotFoundException {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException());
 
@@ -170,7 +176,7 @@ public class ProjectServiceImplementation implements ProjectService {
             throw new NotFoundException();
         }
 
-        return projectRepository.save(project);
+        return ProjectResponseDTO.fromEntity(projectRepository.save(project));
     }
 
     private List<User> findSupervisors(List<Long> supervisorIds) {
@@ -273,6 +279,13 @@ public class ProjectServiceImplementation implements ProjectService {
         // Save projects and users
         projectRepository.saveAll(projects);
         userRepository.saveAll(responsibleUsers);
+    }
+
+    @Override
+    public ResponseEntity<byte[]> downloadFile(Long projectId, Long docId) {
+        Project project = projectRepository.findById(projectId).get();
+        Document document = documentRepository.findById(docId).get();
+        return FileUtils.downloadFile(project, document, DIRECTORY);
     }
 
 

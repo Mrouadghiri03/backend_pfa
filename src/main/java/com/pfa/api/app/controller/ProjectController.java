@@ -4,11 +4,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import com.pfa.api.app.dto.CommentDTO;
-import com.pfa.api.app.entity.Comment;
-import com.pfa.api.app.service.CommentService;
-import com.pfa.api.app.service.implementation.CommentServiceImplementation;
-import com.pfa.api.app.util.ProjectUtils;
 import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,10 +23,9 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 
 import com.pfa.api.app.JsonRsponse.JsonResponse;
-import com.pfa.api.app.dto.ProjectDTO;
-import com.pfa.api.app.entity.Project;
+import com.pfa.api.app.dto.requests.ProjectDTO;
+import com.pfa.api.app.dto.responses.ProjectResponseDTO;
 import com.pfa.api.app.entity.user.TeamPreference;
-import com.pfa.api.app.entity.user.User;
 import com.pfa.api.app.service.ProjectService;
 
 import lombok.RequiredArgsConstructor;
@@ -49,21 +43,21 @@ public class ProjectController {
                                                          @RequestParam("files") List<MultipartFile> files,
                                                          @RequestParam("report") MultipartFile report) throws AccessDeniedException, NotFoundException {
 
-        Project project = projectService.addProject(projectDTO, files,report);
+        ProjectResponseDTO project = projectService.addProject(projectDTO, files,report);
         return new ResponseEntity<JsonResponse>(
                 new JsonResponse(201, "Project has been created successfully!"), HttpStatus.CREATED);
     }
 
     @GetMapping
-    public ResponseEntity<List<Project>> getProjects() throws NotFoundException {
-        List<Project> projects = projectService.getAllProjects();
+    public ResponseEntity<List<ProjectResponseDTO>> getProjects() throws NotFoundException {
+        List<ProjectResponseDTO> projects = projectService.getAllProjects();
 
         return ResponseEntity.ok(projects);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Project> getProjectById(@PathVariable Long id) throws NotFoundException {
-        Project project = projectService.getProject(id);
+    public ResponseEntity<ProjectResponseDTO> getProjectById(@PathVariable Long id) throws NotFoundException {
+        ProjectResponseDTO project = projectService.getProject(id);
 
         return ResponseEntity.ok(project);
 
@@ -82,9 +76,18 @@ public class ProjectController {
 
     @DeleteMapping("/{id}/docs/{docId}")
     @PreAuthorize("hasAnyRole('ROLE_SUPERVISOR','ROLE_RESPONSIBLE')")
-    public ResponseEntity<Project> deleteFile(@PathVariable Long id, @PathVariable Long docId) throws NotFoundException, IOException {
+    public ResponseEntity<ProjectResponseDTO> deleteFile(@PathVariable Long id, @PathVariable Long docId) throws NotFoundException, IOException {
 
-        return new ResponseEntity<Project>(projectService.deleteFile(id, docId), HttpStatus.OK);
+        return new ResponseEntity<>(projectService.deleteFile(id, docId), HttpStatus.OK);
+    }
+    @GetMapping("/{projectId}/docs/{docId}")
+    public ResponseEntity<byte[]> downloadFile(@PathVariable Long projectId, @PathVariable Long docId) throws NotFoundException, IOException {
+        return projectService.downloadFile(projectId, docId);
+    }
+
+    @GetMapping("/{projectId}/docs/{docId}")
+    public ResponseEntity<byte[]> getFile(@PathVariable Long projectId, @PathVariable Long docId) throws NotFoundException, IOException {
+        return projectService.downloadFile(projectId, docId);
     }
 
 

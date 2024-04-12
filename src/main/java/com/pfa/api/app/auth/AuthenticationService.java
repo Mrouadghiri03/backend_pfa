@@ -48,10 +48,21 @@ public class AuthenticationService {
         Role userRole = roleRepository.findByName(RoleName.ROLE_USER)
                 .orElseGet(() -> roleRepository.save(new Role(RoleName.ROLE_USER)));
 
-        Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
-        if (existingUser.isPresent()) {
-            throw new SQLIntegrityConstraintViolationException("E-mail address already in use.");
-        }
+        userRepository.findByEmail(request.getEmail())
+                .ifPresent(existingUser -> {            
+                    throw new RuntimeException("Email already in use.");
+                });
+
+        userRepository.findByCin(request.getCin())
+                .ifPresent(existingUser -> {
+                    throw new RuntimeException("CIN already in use.");
+                });
+
+        userRepository.findByInscriptionNumber(request.getInscriptionNumber())
+                .ifPresent(existingUser -> {
+                    throw new RuntimeException("Inscription Number already in use.");
+                });
+
         User user = User.builder()
             .firstName(request.getFirstName())
             .lastName(request.getLastName())

@@ -1,6 +1,6 @@
 package com.pfa.api.app.service;
 
-import com.pfa.api.app.dto.CommentDTO;
+import com.pfa.api.app.dto.requests.CommentDTO;
 import com.pfa.api.app.entity.Comment;
 import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;

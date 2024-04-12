@@ -1,6 +1,6 @@
 package com.pfa.api.app.controller;
 import com.pfa.api.app.JsonRsponse.JsonResponse;
-import com.pfa.api.app.dto.CommentDTO;
+import com.pfa.api.app.dto.requests.CommentDTO;
 import com.pfa.api.app.entity.Comment;
 import com.pfa.api.app.entity.Document;
 import com.pfa.api.app.service.CommentService;

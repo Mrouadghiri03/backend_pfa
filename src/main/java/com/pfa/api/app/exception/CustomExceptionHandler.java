@@ -90,8 +90,8 @@ public class CustomExceptionHandler {
 
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ErrorResponse> handleRuntimeExceptionn(RuntimeException ex) {
-        ErrorResponse response = new ErrorResponse("Error : ", ex.getMessage());
+    public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex) {
+        ErrorResponse response = new ErrorResponse("Error", ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 

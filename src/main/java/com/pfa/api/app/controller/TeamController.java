@@ -15,7 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.pfa.api.app.JsonRsponse.JsonResponse;
-import com.pfa.api.app.dto.TeamDTO;
+import com.pfa.api.app.dto.requests.TeamDTO;
+import com.pfa.api.app.dto.responses.TeamResponseDTO;
 import com.pfa.api.app.entity.Team;
 import com.pfa.api.app.service.TeamService;
 
@@ -29,26 +30,26 @@ public class TeamController {
     private final TeamService teamService;
 
     @GetMapping
-    public ResponseEntity<List<Team>> getAllTeams() {
+    public ResponseEntity<List<TeamResponseDTO>> getAllTeams() {
         return ResponseEntity.ok(teamService.getAllTeams());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Team> getTeamById(@PathVariable Long id) {
-        Team team = teamService.getTeamById(id);
+    public ResponseEntity<TeamResponseDTO> getTeamById(@PathVariable Long id) {
+        TeamResponseDTO team = teamService.getTeamById(id);
         return team != null ? ResponseEntity.ok(team) : ResponseEntity.notFound().build();
     }
 
     @PostMapping
-    public ResponseEntity<Team> createTeam(@RequestBody TeamDTO teamDTO) throws NotFoundException {
-        Team createdTeam = teamService.createTeam(teamDTO);
+    public ResponseEntity<TeamResponseDTO> createTeam(@RequestBody TeamDTO teamDTO) throws NotFoundException {
+        TeamResponseDTO createdTeam = teamService.createTeam(teamDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdTeam);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Team> updateTeam(@PathVariable Long id, @RequestBody TeamDTO teamDTO) {
+    public ResponseEntity<TeamResponseDTO> updateTeam(@PathVariable Long id, @RequestBody TeamDTO teamDTO) {
         try {
-            Team updatedTeam = teamService.updateTeam(id, teamDTO);
+            TeamResponseDTO updatedTeam = teamService.updateTeam(id, teamDTO);
             return updatedTeam != null ? ResponseEntity.ok(updatedTeam) : ResponseEntity.notFound().build();
         } catch (NotFoundException e) {
             return ResponseEntity.notFound().build();

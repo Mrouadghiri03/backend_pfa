@@ -1,7 +1,7 @@
 package com.pfa.api.app.entity;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.pfa.api.app.dto.CommentDTO;
+import com.pfa.api.app.dto.requests.CommentDTO;
 import com.pfa.api.app.entity.user.User;
 import jakarta.persistence.*;
 import lombok.*;

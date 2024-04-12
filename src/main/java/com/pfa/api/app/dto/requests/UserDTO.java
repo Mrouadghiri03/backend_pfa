@@ -1,4 +1,4 @@
-package com.pfa.api.app.dto;
+package com.pfa.api.app.dto.requests;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

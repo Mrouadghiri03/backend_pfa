@@ -9,5 +9,7 @@ import com.pfa.api.app.entity.user.User;
 
 public interface UserRepository extends JpaRepository<User , Long>{
     Optional<User> findByEmail(String email);
+    Optional<User> findByCin(String cin);
+    Optional<User> findByInscriptionNumber(String inscriptionNumber);
 
 }
