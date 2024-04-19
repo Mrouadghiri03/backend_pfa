@@ -25,6 +25,7 @@ import org.springframework.web.servlet.ModelAndView;
 import com.pfa.api.app.JsonRsponse.JsonResponse;
 import com.pfa.api.app.dto.requests.ProjectDTO;
 import com.pfa.api.app.dto.responses.ProjectResponseDTO;
+import com.pfa.api.app.dto.responses.TeamPreferenceResponseDTO;
 import com.pfa.api.app.entity.user.TeamPreference;
 import com.pfa.api.app.service.ProjectService;
 
@@ -40,10 +41,11 @@ public class ProjectController {
     @PreAuthorize("hasRole('ROLE_SUPERVISOR')")
     @PostMapping
     public ResponseEntity<JsonResponse> createNewProject(@ModelAttribute ProjectDTO projectDTO,
-                                                         @RequestParam("files") List<MultipartFile> files,
-                                                         @RequestParam("report") MultipartFile report) throws AccessDeniedException, NotFoundException {
+            @RequestParam(value = "files", required = false) List<MultipartFile> files,
+            @RequestParam(value = "report", required = false) MultipartFile report)
+            throws AccessDeniedException, NotFoundException {
 
-        ProjectResponseDTO project = projectService.addProject(projectDTO, files,report);
+        ProjectResponseDTO project = projectService.addProject(projectDTO, files, report);
         return new ResponseEntity<JsonResponse>(
                 new JsonResponse(201, "Project has been created successfully!"), HttpStatus.CREATED);
     }
@@ -110,8 +112,8 @@ public class ProjectController {
     }
 
     @GetMapping("/preferences")
-    public ResponseEntity<List<TeamPreference>> getProjectPreference() throws NotFoundException {
-        return new ResponseEntity<List<TeamPreference>>(projectService.getAllProjectsPreferences(), HttpStatus.OK);
+    public ResponseEntity<List<TeamPreferenceResponseDTO>> getProjectPreference() throws NotFoundException {
+        return new ResponseEntity<>(projectService.getAllProjectsPreferencesResponse(), HttpStatus.OK);
     }
 
     @PostMapping("/assign")

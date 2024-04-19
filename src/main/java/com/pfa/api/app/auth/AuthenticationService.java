@@ -45,23 +45,31 @@ public class AuthenticationService {
     public AuthenticationResponse register(RegisterDTO request) throws SQLIntegrityConstraintViolationException ,
             PropertyValueException {
                 
-        Role userRole = roleRepository.findByName(RoleName.ROLE_USER)
-                .orElseGet(() -> roleRepository.save(new Role(RoleName.ROLE_USER)));
+
 
         userRepository.findByEmail(request.getEmail())
                 .ifPresent(existingUser -> {            
                     throw new RuntimeException("Email already in use.");
                 });
 
-        userRepository.findByCin(request.getCin())
-                .ifPresent(existingUser -> {
-                    throw new RuntimeException("CIN already in use.");
-                });
+        if (request.getCin() != null) {
+            
+            userRepository.findByCin(request.getCin())
+                    .ifPresent(existingUser -> {
+                        throw new RuntimeException("CIN already in use.");
+                    });
+        }
+        if (request.getInscriptionNumber() != null) {
+            
+            userRepository.findByInscriptionNumber(request.getInscriptionNumber())
+                    .ifPresent(existingUser -> {
+                        throw new RuntimeException("Inscription Number already in use.");
+                    });
+            
+        }
+        Role userRole = roleRepository.findByName(request.getRole())
+                .orElseGet(() -> roleRepository.save(new Role(request.getRole())));
 
-        userRepository.findByInscriptionNumber(request.getInscriptionNumber())
-                .ifPresent(existingUser -> {
-                    throw new RuntimeException("Inscription Number already in use.");
-                });
 
         User user = User.builder()
             .firstName(request.getFirstName())

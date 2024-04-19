@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 public class Role {
-    public Role(RoleName name) {
+    public Role(String name) {
         this.name = name;
     }
 
@@ -27,9 +27,8 @@ public class Role {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "name")
-    private RoleName name;
+    private String name;
 
 
     // Getters and setters

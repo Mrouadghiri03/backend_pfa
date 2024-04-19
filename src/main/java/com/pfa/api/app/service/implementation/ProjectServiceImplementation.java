@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
+import org.springframework.expression.spel.ast.Assign;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -22,16 +24,22 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.pfa.api.app.dto.requests.ProjectDTO;
 import com.pfa.api.app.dto.responses.ProjectResponseDTO;
+import com.pfa.api.app.dto.responses.TeamPreferenceResponseDTO;
+import com.pfa.api.app.entity.Assignment;
 import com.pfa.api.app.entity.Branch;
 import com.pfa.api.app.entity.Document;
 import com.pfa.api.app.entity.Project;
+import com.pfa.api.app.entity.Team;
 import com.pfa.api.app.entity.user.TeamPreference;
 import com.pfa.api.app.entity.user.User;
+import com.pfa.api.app.repository.AssignmentRepository;
 import com.pfa.api.app.repository.BranchRepository;
 import com.pfa.api.app.repository.DocumentRepository;
 import com.pfa.api.app.repository.ProjectPreferenceRepository;
 import com.pfa.api.app.repository.ProjectRepository;
+import com.pfa.api.app.repository.TeamRepository;
 import com.pfa.api.app.repository.UserRepository;
+import com.pfa.api.app.service.AssignmentService;
 import com.pfa.api.app.service.ProjectService;
 import com.pfa.api.app.util.FileUtils;
 import com.pfa.api.app.util.ProjectUtils;
@@ -53,6 +61,9 @@ public class ProjectServiceImplementation implements ProjectService {
     private final ProjectRepository projectRepository;
     private final DocumentRepository documentRepository;
     private final ProjectPreferenceRepository projectPreferenceRepository;
+    private final AssignmentRepository assignmentRepository;
+    private final TeamRepository teamRepository;
+    private final AssignmentService assignmentService;
 
     @SuppressWarnings("null")
     @Override
@@ -79,10 +90,10 @@ public class ProjectServiceImplementation implements ProjectService {
 
         Project savedProject = projectRepository.save(project);
 
-        if (!files.isEmpty()) {
+        if (files != null && !files.isEmpty()) {
             FileUtils.saveDocuments(files, savedProject, DIRECTORY, documentRepository);
         }
-        if (!report.isEmpty()) {
+        if (report != null && !report.isEmpty()) {
             FileUtils.saveReport(report, savedProject, DIRECTORY, documentRepository);
             return  ProjectResponseDTO.fromEntity(projectRepository.save(savedProject));
         }
@@ -96,21 +107,47 @@ public class ProjectServiceImplementation implements ProjectService {
     @SuppressWarnings("null")
     @Override
     public ProjectResponseDTO getProject(Long id) throws NotFoundException {
+        User currentUser = UserUtils.getCurrentUser(userRepository);
+        Boolean isHeadOfBranch = UserUtils.isHeadOfBranch(currentUser);
+        Boolean isSupervisor = UserUtils.isSupervisor(currentUser);
         Optional<Project> projectOptional = projectRepository.findById(id);
-        return ProjectResponseDTO.fromEntity(projectOptional.orElseThrow(() -> new NotFoundException()));
+
+        if (!projectOptional.isPresent()) {
+            throw new NotFoundException();
+        }
+
+        Project project = projectOptional.get();
+
+        if (isHeadOfBranch || (isSupervisor && project.getSupervisors().contains(currentUser))
+                || project.getIsPublic()) {
+            return ProjectResponseDTO.fromEntity(project);
+        }
+
+        throw new RuntimeException("Unauthorized access to project");
     }
 
     @Override
     public List<ProjectResponseDTO> getAllProjects() throws NotFoundException {
         User currentUser = UserUtils.getCurrentUser(userRepository);
         Boolean isHeadOfBranch = UserUtils.isHeadOfBranch(currentUser);
-        return isHeadOfBranch == true ? projectRepository.findAll().stream()
-                .map(ProjectResponseDTO::fromEntity)
-                .collect(Collectors.toList()) : projectRepository.findByIsPublicTrue().stream()
+        Boolean isSupervisor = UserUtils.isSupervisor(currentUser);
+
+        List<Project> projects;
+
+        if (isHeadOfBranch) {
+            projects = projectRepository.findAll();
+        } else if (isSupervisor) {
+            projects = projectRepository.findAll().stream()
+                    .filter(project -> project.getSupervisors().contains(currentUser))
+                    .collect(Collectors.toList());
+        } else {
+            projects = projectRepository.findByIsPublicTrue();
+        }
+
+        return projects.stream()
                 .map(ProjectResponseDTO::fromEntity)
                 .collect(Collectors.toList());
     }
-
     @SuppressWarnings("null")
     @Override
     public ProjectResponseDTO updateProject(ProjectDTO projectDTO, Long id,List<MultipartFile> files,MultipartFile report) throws NotFoundException {
@@ -226,13 +263,32 @@ public class ProjectServiceImplementation implements ProjectService {
         }
         return projectPreferenceRepository.findAll();
     }
+    
+    @Override
+    public List<TeamPreferenceResponseDTO> getAllProjectsPreferencesResponse() {
+        List<TeamPreference> projectsPreferences = projectPreferenceRepository.findAll();
+        return projectsPreferences.stream()
+                .map(TeamPreferenceResponseDTO::fromEntity)
+                .collect(Collectors.toList());
+
+    }
 
     @Override
     public Map<User, Project> assignUsersToProjects() throws NotFoundException {
-        return ProjectUtils.assignTeamsToProjects(getAllProjectsPreferences()
+        Map<User, Project> result = ProjectUtils.assignTeamsToProjects(getAllProjectsPreferences()
             ,userRepository
             ,projectPreferenceRepository
             ,projectRepository);
+        
+        Assignment assignment = Assignment.builder()
+            .branch(UserUtils.getCurrentUser(userRepository).getBranch())
+            .date(new Date())
+            .completed(false)
+            .initiated(true)
+            .build();
+        assignmentRepository.save(assignment);
+        return result;
+        
     }
 
     @Override
@@ -242,17 +298,20 @@ public class ProjectServiceImplementation implements ProjectService {
                 userRepository, projectPreferenceRepository, projectRepository);
         List<Project> projects = new ArrayList<>();
         List<User> responsibleUsers = new ArrayList<>();
+        List<Team> teams = new ArrayList<>();
 
         for (Entry<User, Project> assignment : assignedProjects.entrySet()) {
             Project project = assignment.getValue();
             User user = assignment.getKey();
+            Team team = user.getTeam();
 
             project.setTeam(user.getTeam());
             user.getTeam().setProject(project);
+            team.setProject(project);
 
             projects.add(project);
             responsibleUsers.add(user);
-
+            teams.add(team);
             // Send email to the members
             // for (User member : user.getTeam().getMembers()) {
             //     String userMessage = "Dear " + member.getFirstName() + ",\n\n";
@@ -279,6 +338,10 @@ public class ProjectServiceImplementation implements ProjectService {
         // Save projects and users
         projectRepository.saveAll(projects);
         userRepository.saveAll(responsibleUsers);
+        teamRepository.saveAll(teams);
+        assignmentService.completeAssignment();
+        
+        
     }
 
     @Override

@@ -61,5 +61,9 @@ public class Branch {
     @JsonManagedReference
     private List<Project> projects;
 
+    @OneToMany(mappedBy = "branch")
+    @JsonBackReference
+    private List<Assignment> assignments;
+
 
 }

@@ -11,5 +11,5 @@ import com.pfa.api.app.entity.user.RoleName;
 
 
 public interface RoleRepository extends JpaRepository<Role , Long>{
-    Optional<Role> findByName(RoleName name);
+    Optional<Role> findByName(String name);
 }

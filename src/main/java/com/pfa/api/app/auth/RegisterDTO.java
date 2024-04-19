@@ -20,6 +20,7 @@ public class RegisterDTO {
     private String inscriptionNumber;
     private String email;
     private String password;
+    private String role;
 
 
 }

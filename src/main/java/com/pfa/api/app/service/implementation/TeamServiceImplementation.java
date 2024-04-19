@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import com.pfa.api.app.dto.requests.TeamDTO;
 import com.pfa.api.app.dto.responses.TeamResponseDTO;
 import com.pfa.api.app.entity.Team;
+import com.pfa.api.app.entity.user.Role;
 import com.pfa.api.app.entity.user.RoleName;
 import com.pfa.api.app.entity.user.User;
 import com.pfa.api.app.repository.RoleRepository;
@@ -37,8 +38,7 @@ public class TeamServiceImplementation implements TeamService {
             throw new RuntimeException("you're already in a team");
         }
         // Associer les rôles à l'utilisateur
-        currentUser.getRoles().add(roleRepository.findByName(RoleName.ROLE_RESPONSIBLE).get());
-
+        
         // Enregistrer l'utilisateur dans la base de données
 
         List<User> members = new ArrayList<>();
@@ -52,12 +52,16 @@ public class TeamServiceImplementation implements TeamService {
 
         // Créer l'équipe en utilisant les données du DTO
         Team team = Team.builder()
-                .name(teamDTO.getName())
-                .members(members)
-                .responsible(currentUser)
-                .build();
+        .name(teamDTO.getName())
+        .members(members)
+        .responsible(currentUser)
+        .build();
         team.getMembers().add(currentUser);
         Team persistedTeam = teamRepository.save(team);
+        if (!currentUser.getRoles().stream().map(Role::getName)
+                .anyMatch(name -> name.equals(RoleName.ROLE_RESPONSIBLE.toString()))) {
+            currentUser.getRoles().add(roleRepository.findByName(RoleName.ROLE_RESPONSIBLE.toString()).get());
+        }
 
         currentUser.setTeam(persistedTeam);
         userRepository.save(currentUser);
@@ -108,7 +112,7 @@ public class TeamServiceImplementation implements TeamService {
         if (existingTeam.getResponsible() != null) {
             existingTeam.getResponsible().setTeam(null); // Mettre à null la référence à l'équipe dans l'ancien
                                                          // responsable
-            currentUser.getRoles().remove(roleRepository.findByName(RoleName.ROLE_RESPONSIBLE).get());
+            currentUser.getRoles().remove(roleRepository.findByName(RoleName.ROLE_RESPONSIBLE.toString()).get());
 
         }
         existingTeam.setResponsible(null);
@@ -138,7 +142,7 @@ public class TeamServiceImplementation implements TeamService {
         // Mettre à jour le responsable de l'équipe et mettre à jour les références
         // croisées dans la table User
         newResponsible.setTeam(existingTeam); // Mettre à jour la référence à l'équipe dans le nouveau responsable
-        newResponsible.getRoles().add(roleRepository.findByName(RoleName.ROLE_RESPONSIBLE).get());
+        newResponsible.getRoles().add(roleRepository.findByName(RoleName.ROLE_RESPONSIBLE.toString()).get());
         existingTeam.setResponsible(newResponsible);
         existingTeam.setName(teamDTO.getName());
         // Enregistrer les modifications dans la base de données

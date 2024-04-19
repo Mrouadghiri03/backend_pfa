@@ -8,6 +8,7 @@ import java.util.Random;
 
 import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 
+import com.pfa.api.app.entity.Assignment;
 import com.pfa.api.app.entity.Project;
 import com.pfa.api.app.entity.user.TeamPreference;
 import com.pfa.api.app.entity.user.User;
@@ -26,7 +27,7 @@ public class ProjectUtils {
             System.out.println("Project Preference Ranks: " + teamPreference.getProjectPreferenceRanks());
             System.out.println();
         }
-        int iterations = projectsPreferences.get(0).getProjectPreferenceRanks().size();
+        int iterations = projectsPreferences.size();
         Map<Long,Long> assignedProjects = new HashMap<>();
         List<TeamPreference> holderProjectsPreferences = new ArrayList<>(projectsPreferences);
         for (int rank = 1; rank <= iterations; rank++) {
@@ -64,6 +65,7 @@ public class ProjectUtils {
                     continue;
                 } else {
                     assignedProjects.put(projectsPreference.getUser().getId(), chosenOne);
+                    removeOtherProjectsFromUser(projectsPreference, chosenOne);
                 }
                 holderProjectsPreferences = removeTakenProjectFromOthers(holderProjectsPreferences, projectsPreference,chosenOne);
                 System.out.println("first elimination : ");
@@ -85,6 +87,7 @@ public class ProjectUtils {
 
             resultMap.put(user, project);
         }
+
         return resultMap;
 
     }
@@ -96,6 +99,16 @@ public class ProjectUtils {
             System.out.println("Project Preference Ranks: " + teamPreference.getProjectPreferenceRanks());
             System.out.println();
         }
+    }
+    public static TeamPreference removeOtherProjectsFromUser(TeamPreference projectsPreference, Long chosenOne) {
+                for (Map.Entry<Long, Integer> entry : projectsPreference.getProjectPreferenceRanks()
+                        .entrySet()) {
+                    if (entry.getKey() != chosenOne) {
+                        entry.setValue(null); // Remove this project from his preferences
+                    }
+
+                }
+        return projectsPreference;
     }
     public static List<TeamPreference> removeTakenProjectFromOthers(List<TeamPreference> holderProjectsPreferences,
             TeamPreference projectsPreference, Long chosenOne) {
@@ -138,6 +151,7 @@ public class ProjectUtils {
                 TeamPreference theLuckyOne = holderProjectPreferences.stream()
                     .filter(teamPreference -> teamPreference.getUser().getId() == entry.getKey()).findFirst().get();
                 removeTakenProjectFromOthers(holderProjectPreferences, theLuckyOne, chosenOne);
+                removeOtherProjectsFromUser(theLuckyOne, chosenOne);
                 break;
             }
         }

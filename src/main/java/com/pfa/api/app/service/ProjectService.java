@@ -11,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.pfa.api.app.dto.requests.ProjectDTO;
 import com.pfa.api.app.dto.responses.ProjectResponseDTO;
+import com.pfa.api.app.dto.responses.TeamPreferenceResponseDTO;
 import com.pfa.api.app.entity.Project;
 import com.pfa.api.app.entity.user.TeamPreference;
 import com.pfa.api.app.entity.user.User;
@@ -36,6 +37,8 @@ public interface ProjectService {
     public String submitProjectPreference(Map<Long, Integer> projectPreferences) throws NotFoundException;
 
     List<TeamPreference> getAllProjectsPreferences();
+
+    List<TeamPreferenceResponseDTO> getAllProjectsPreferencesResponse();
 
     Map<User,Project> assignUsersToProjects() throws NotFoundException;
 
