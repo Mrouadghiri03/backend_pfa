@@ -19,8 +19,8 @@ public class ProjectDTO {
     
     private String description;
 
-    private Date year;
-    
+    private String academicYear;
+
     private String status;
 
     private String techStack;
@@ -30,8 +30,6 @@ public class ProjectDTO {
     private Boolean isPublic;
 
     private Long branch;
-
-    private List<Date> dueDates;
 
     private List<Long> supervisors;
 

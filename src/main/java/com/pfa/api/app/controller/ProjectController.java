@@ -51,8 +51,11 @@ public class ProjectController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ProjectResponseDTO>> getProjects() throws NotFoundException {
-        List<ProjectResponseDTO> projects = projectService.getAllProjects();
+    public ResponseEntity<List<ProjectResponseDTO>> getProjects(
+            @RequestParam(defaultValue = "1") int pageNumber,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam String academicYear) throws NotFoundException {
+        List<ProjectResponseDTO> projects = projectService.getAllProjects(pageNumber, pageSize, academicYear);
 
         return ResponseEntity.ok(projects);
     }
@@ -89,8 +92,8 @@ public class ProjectController {
 
 
 
-    @GetMapping("/accept")
-    public ModelAndView acceptProject(@RequestParam("token") String approvalToken) {
+    @GetMapping("/accept/token")
+    public ModelAndView acceptProjectWithToken(@RequestParam("token") String approvalToken) {
         projectService.validateToken(approvalToken);
         ModelAndView modelAndView = new ModelAndView();
 
@@ -101,6 +104,23 @@ public class ProjectController {
         return modelAndView;
 
     }
+
+    @PostMapping("/{id}/accept")
+    @PreAuthorize("hasRole('ROLE_HEAD_OF_BRANCH')")
+    public ResponseEntity<JsonResponse> acceptProject(@PathVariable Long id) throws NotFoundException {
+        projectService.approveProject(id);
+        return new ResponseEntity<JsonResponse>(new JsonResponse(200, "The project is accepted ,students can view and choose it now"), HttpStatus.OK);
+
+    }
+
+    @PostMapping("/{id}/reject")
+    @PreAuthorize("hasRole('ROLE_HEAD_OF_BRANCH')")
+    public ResponseEntity<JsonResponse> rejectProject(@PathVariable Long id) throws NotFoundException {
+        projectService.rejectProject(id);
+        return new ResponseEntity<JsonResponse>(new JsonResponse(200, "The project is rejected ,students can't view it"), HttpStatus.OK);
+
+    }
+
 
 
     //endpoint for submitting Project preferences:

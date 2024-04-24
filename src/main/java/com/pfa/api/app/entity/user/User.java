@@ -15,6 +15,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
 import com.pfa.api.app.entity.Branch;
+import com.pfa.api.app.entity.JoinRequest;
 import com.pfa.api.app.entity.Project;
 import com.pfa.api.app.entity.Team;
 
@@ -114,6 +115,10 @@ public class User implements UserDetails{
     @OneToOne(mappedBy = "responsible")
     @JsonBackReference
     private Team teamInResponsibility;
+
+    @OneToOne(targetEntity = JoinRequest.class )
+    @JoinColumn(name = "join_request_id" , nullable = true)
+    private JoinRequest joinRequest;
 
     @Override
    public Collection<GrantedAuthority> getAuthorities() {

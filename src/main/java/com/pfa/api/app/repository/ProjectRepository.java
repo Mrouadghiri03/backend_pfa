@@ -10,5 +10,7 @@ import com.pfa.api.app.entity.Project;
 public interface ProjectRepository extends JpaRepository<Project,Long>{
     Optional<Project> findByApprovalToken(String approvalToken);
     List<Project> findByIsPublicTrue();
+    List<Project> findByAcademicYear(String academicYear);
+
     
 }

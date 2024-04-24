@@ -65,5 +65,9 @@ public class Branch {
     @JsonBackReference
     private List<Assignment> assignments;
 
+    @OneToMany(mappedBy = "branch")
+    @JsonBackReference
+    private List<JoinRequest> joinRequests;
+
 
 }

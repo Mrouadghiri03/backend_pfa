@@ -2,10 +2,12 @@ package com.pfa.api.app.auth;
 
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.hibernate.PropertyValueException;
+import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
@@ -13,12 +15,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.pfa.api.app.entity.Branch;
+import com.pfa.api.app.entity.JoinRequest;
 import com.pfa.api.app.entity.user.Confirmation;
 import com.pfa.api.app.entity.user.Role;
 import com.pfa.api.app.entity.user.RoleName;
 import com.pfa.api.app.entity.user.User;
 import com.pfa.api.app.repository.BranchRepository;
 import com.pfa.api.app.repository.ConfirmationRepository;
+import com.pfa.api.app.repository.JoinRequestRepository;
 import com.pfa.api.app.repository.RoleRepository;
 import com.pfa.api.app.repository.UserRepository;
 import com.pfa.api.app.security.JwtService;
@@ -39,11 +43,12 @@ public class AuthenticationService {
     private final BranchRepository branchRepository;
     private final EmailService emailService;
     private final RoleRepository roleRepository;
+    private final JoinRequestRepository joinRequestRepository;
 
 
     
     public AuthenticationResponse register(RegisterDTO request) throws SQLIntegrityConstraintViolationException ,
-            PropertyValueException {
+            PropertyValueException, NotFoundException {
                 
 
 
@@ -51,9 +56,7 @@ public class AuthenticationService {
                 .ifPresent(existingUser -> {            
                     throw new RuntimeException("Email already in use.");
                 });
-
         if (request.getCin() != null) {
-            
             userRepository.findByCin(request.getCin())
                     .ifPresent(existingUser -> {
                         throw new RuntimeException("CIN already in use.");
@@ -85,16 +88,29 @@ public class AuthenticationService {
 
         user.getRoles().add(userRole);
 
-        Optional<Branch> branch = branchRepository.findById(request.getStudiedBranch());
-        if (branch.isPresent()) {
-            user.setStudiedBranch(branch.get());
+        Branch branch = new Branch();
+        if (request.getRole().equals(RoleName.ROLE_STUDENT.name())) {
+            branch = branchRepository.findById(request.getBranch()).orElseThrow(NotFoundException::new);
+            user.setStudiedBranch(branch);
+        } else if(request.getRole().equals(RoleName.ROLE_SUPERVISOR.name())) {
+            branch = branchRepository.findById(request.getBranch()).orElseThrow(NotFoundException::new);
+            branch.getProfs().add(user);
+        } else {
+            branch = branchRepository.findById(request.getBranch()).orElseThrow(NotFoundException::new);
+            user.setBranch(branch);
         }
         
         userRepository.save(user);
+        JoinRequest joinRequest = new JoinRequest();
+        joinRequest.setUser(user);
+        joinRequest.setBranch(branch);
+        joinRequest.setRequestDate(new Date());
+        
+        joinRequestRepository.save(joinRequest);
+        user.setJoinRequest(joinRequest);
+        userRepository.save(user);
 
-        Branch studiedBranch = user.getStudiedBranch();
-
-        User headOfBranch = studiedBranch.getHeadOfBranch();
+        User headOfBranch = branch.getHeadOfBranch();
         
 
         // using this part when i want that confirmation stuff

@@ -1,20 +1,18 @@
 package com.pfa.api.app.dto.responses;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.pfa.api.app.entity.Branch;
+import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import com.pfa.api.app.entity.Document;
 import com.pfa.api.app.entity.Project;
-import com.pfa.api.app.entity.Team;
 import com.pfa.api.app.entity.user.User;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.util.Date;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -25,11 +23,10 @@ public class ProjectResponseDTO {
     private Long id;
     private String title;
     private String description;
-    private Date year;
+    private String academicYear;
     private String status;
     private String techStack;
     private String codeLink;
-    private List<Date> dueDates;
     private Boolean isPublic;
     private String approvalToken;
     private Long reportId;
@@ -45,11 +42,10 @@ public class ProjectResponseDTO {
                 .id(project.getId())
                 .title(project.getTitle())
                 .description(project.getDescription())
-                .year(project.getYear())
+                .academicYear(project.getAcademicYear())
                 .status(project.getStatus())
                 .techStack(project.getTechStack())
                 .codeLink(project.getCodeLink())
-                .dueDates(project.getDueDates())
                 .isPublic(project.getIsPublic())
                 .approvalToken(project.getApprovalToken())
                 .reportId(project.getReport() != null ? project.getReport().getId() : null)

@@ -14,7 +14,7 @@ public class RegisterDTO {
     
     private String firstName;
     private String lastName;
-    private Long studiedBranch;
+    private Long branch;
     private String phoneNumber;
     private String cin;
     private String inscriptionNumber;

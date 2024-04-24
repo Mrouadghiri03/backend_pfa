@@ -44,8 +44,6 @@ public class Project {
     @Column(nullable = false)
     private String description;
 
-    private Date year ;
-
     @Column(nullable = false)
     private String status;
 
@@ -53,7 +51,7 @@ public class Project {
 
     private String codeLink;
 
-    private List<Date> dueDates;
+    private String academicYear;
 
     private Boolean  isPublic;
 
@@ -78,7 +76,7 @@ public class Project {
     @JsonIgnore
     private List<User>  supervisors ;
 
-    @OneToMany(mappedBy = "project" , fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "project" , fetch = FetchType.EAGER , cascade = CascadeType.ALL)
     @JsonManagedReference
     private List<Document> documents;
 

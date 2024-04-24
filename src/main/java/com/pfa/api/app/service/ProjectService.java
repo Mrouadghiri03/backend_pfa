@@ -25,7 +25,8 @@ public interface ProjectService {
 
     ProjectResponseDTO getProject(Long id) throws NotFoundException;
 
-    List<ProjectResponseDTO> getAllProjects() throws NotFoundException;
+    List<ProjectResponseDTO> getAllProjects(int pageNumber,int pageSize , String academicYear) throws NotFoundException;
+
 
     ProjectResponseDTO updateProject(ProjectDTO projectDTO, Long id,
             List<MultipartFile> files,MultipartFile report) throws NotFoundException;
@@ -33,6 +34,10 @@ public interface ProjectService {
     ProjectResponseDTO deleteFile(Long id, Long docId) throws NotFoundException, IOException;
 
     void validateToken(String approvalToken);
+
+    void approveProject(Long id) throws NotFoundException;
+
+    void rejectProject(Long id) throws NotFoundException;
 
     public String submitProjectPreference(Map<Long, Integer> projectPreferences) throws NotFoundException;
 

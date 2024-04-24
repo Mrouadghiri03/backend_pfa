@@ -3,9 +3,10 @@ package com.pfa.api.app.service.implementation;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Year;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -16,7 +17,6 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
-import org.springframework.expression.spel.ast.Assign;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -53,8 +53,7 @@ public class ProjectServiceImplementation implements ProjectService {
 
     @Value("${upload.directory}")
     public String DIRECTORY;
-    private final Map<Long, List<TeamPreference>> userPreferences = new HashMap<>();//this one is for storing user preferences y by order in a HashMap
-
+    private final Map<Long, List<TeamPreference>> userPreferences;
     private final EmailServiceImplementation emailService;
     private final UserRepository userRepository;
     private final BranchRepository branchRepository;
@@ -67,7 +66,7 @@ public class ProjectServiceImplementation implements ProjectService {
 
     @SuppressWarnings("null")
     @Override
-    public ProjectResponseDTO addProject(ProjectDTO projectDTO, List<MultipartFile> files,MultipartFile report)
+    public ProjectResponseDTO addProject(ProjectDTO projectDTO, List<MultipartFile> files, MultipartFile report)
             throws NotFoundException, AccessDeniedException {
         User owner = UserUtils.getCurrentUser(userRepository);
         Branch branch = branchRepository.findById(projectDTO.getBranch()).get();
@@ -78,8 +77,8 @@ public class ProjectServiceImplementation implements ProjectService {
         Project project = Project.builder()
                 .title(projectDTO.getTitle())
                 .description(projectDTO.getDescription())
-                .year(projectDTO.getYear())
                 .techStack(projectDTO.getTechStack())
+                .academicYear(projectDTO.getAcademicYear())
                 .supervisors(supervisors)
                 .codeLink(projectDTO.getCodeLink())
                 .status(projectDTO.getStatus())
@@ -95,9 +94,8 @@ public class ProjectServiceImplementation implements ProjectService {
         }
         if (report != null && !report.isEmpty()) {
             FileUtils.saveReport(report, savedProject, DIRECTORY, documentRepository);
-            return  ProjectResponseDTO.fromEntity(projectRepository.save(savedProject));
+            return ProjectResponseDTO.fromEntity(projectRepository.save(savedProject));
         }
-
 
         // email shit for the project approval
         // emailService.sendProjectApprovalEmail(savedProject);
@@ -117,6 +115,13 @@ public class ProjectServiceImplementation implements ProjectService {
         }
 
         Project project = projectOptional.get();
+        String[] years = project.getAcademicYear().split("/");
+        int currentYear = Year.now().getValue();
+        boolean isCurrentYearPresent = Arrays.asList(years).contains(String.valueOf(currentYear));
+
+        if (!isCurrentYearPresent) {
+            throw new NotFoundException();
+        }
 
         if (isHeadOfBranch || (isSupervisor && project.getSupervisors().contains(currentUser))
                 || project.getIsPublic()) {
@@ -127,7 +132,8 @@ public class ProjectServiceImplementation implements ProjectService {
     }
 
     @Override
-    public List<ProjectResponseDTO> getAllProjects() throws NotFoundException {
+    public List<ProjectResponseDTO> getAllProjects(int pageNumber, int pageSize, String academicYear)
+            throws NotFoundException {
         User currentUser = UserUtils.getCurrentUser(userRepository);
         Boolean isHeadOfBranch = UserUtils.isHeadOfBranch(currentUser);
         Boolean isSupervisor = UserUtils.isSupervisor(currentUser);
@@ -135,22 +141,32 @@ public class ProjectServiceImplementation implements ProjectService {
         List<Project> projects;
 
         if (isHeadOfBranch) {
-            projects = projectRepository.findAll();
+            projects = projectRepository.findByAcademicYear(academicYear);
         } else if (isSupervisor) {
-            projects = projectRepository.findAll().stream()
+            projects = projectRepository.findByAcademicYear(
+                    academicYear).stream()
                     .filter(project -> project.getSupervisors().contains(currentUser))
                     .collect(Collectors.toList());
         } else {
-            projects = projectRepository.findByIsPublicTrue();
+            projects = projectRepository.findByAcademicYear(
+                    academicYear).stream()
+                    .filter(project -> project.getIsPublic() == true).collect(Collectors.toList());
         }
 
-        return projects.stream()
+        // Paginate the projects list
+        int fromIndex = (pageNumber - 1) * pageSize;
+        int toIndex = Math.min(fromIndex + pageSize, projects.size());
+        List<Project> paginatedProjects = projects.subList(fromIndex, toIndex);
+
+        return paginatedProjects.stream()
                 .map(ProjectResponseDTO::fromEntity)
                 .collect(Collectors.toList());
     }
+
     @SuppressWarnings("null")
     @Override
-    public ProjectResponseDTO updateProject(ProjectDTO projectDTO, Long id,List<MultipartFile> files,MultipartFile report) throws NotFoundException {
+    public ProjectResponseDTO updateProject(ProjectDTO projectDTO, Long id, List<MultipartFile> files,
+            MultipartFile report) throws NotFoundException {
         Project project = projectRepository.findById(id).orElseThrow(NotFoundException::new);
 
         if (projectDTO.getDescription() != null) {
@@ -158,6 +174,9 @@ public class ProjectServiceImplementation implements ProjectService {
         }
         if (projectDTO.getTitle() != null) {
             project.setTitle(projectDTO.getTitle());
+        }
+        if (projectDTO.getAcademicYear() != null) {
+            project.setAcademicYear(projectDTO.getAcademicYear());
         }
         if (projectDTO.getCodeLink() != null) {
             project.setCodeLink(projectDTO.getCodeLink());
@@ -168,21 +187,17 @@ public class ProjectServiceImplementation implements ProjectService {
         if (projectDTO.getTechStack() != null) {
             project.setTechStack(projectDTO.getTitle());
         }
-        if (projectDTO.getDueDates() != null) {
-            project.setDueDates(projectDTO.getDueDates());
-        }
         if (!files.isEmpty()) {
             FileUtils.saveDocuments(files, project, DIRECTORY, documentRepository);
         }
-        if (!report.isEmpty()){
+        if (!report.isEmpty()) {
             if (project.getReport() == null) {
                 FileUtils.saveReport(report, project, DIRECTORY, documentRepository);
-                
-            }else{
+
+            } else {
                 return deleteFile(id, project.getReport().getId());
             }
         }
-
 
         projectRepository.save(project);
         return ProjectResponseDTO.fromEntity(project);
@@ -238,6 +253,20 @@ public class ProjectServiceImplementation implements ProjectService {
         }
     }
 
+    @Override
+    public void approveProject(Long id) throws NotFoundException {
+        Project project = projectRepository.findById(id).orElseThrow(NotFoundException::new);
+        project.setIsPublic(true);
+        projectRepository.save(project);
+    }
+
+    @Override
+    public void rejectProject(Long id) throws NotFoundException {
+        Project project = projectRepository.findById(id).orElseThrow(NotFoundException::new);
+        project.getSupervisors().clear();
+        projectRepository.delete(project);
+    }
+
     ///
     @Override
     public String submitProjectPreference(Map<Long, Integer> projectPreferences) throws NotFoundException {
@@ -251,7 +280,7 @@ public class ProjectServiceImplementation implements ProjectService {
 
         projectPreferenceRepository.save(teamPreference);
 
-    return "Team preferences submitted successfully !!";
+        return "Team preferences submitted successfully !!";
     }
 
     @Override
@@ -263,7 +292,7 @@ public class ProjectServiceImplementation implements ProjectService {
         }
         return projectPreferenceRepository.findAll();
     }
-    
+
     @Override
     public List<TeamPreferenceResponseDTO> getAllProjectsPreferencesResponse() {
         List<TeamPreference> projectsPreferences = projectPreferenceRepository.findAll();
@@ -275,20 +304,18 @@ public class ProjectServiceImplementation implements ProjectService {
 
     @Override
     public Map<User, Project> assignUsersToProjects() throws NotFoundException {
-        Map<User, Project> result = ProjectUtils.assignTeamsToProjects(getAllProjectsPreferences()
-            ,userRepository
-            ,projectPreferenceRepository
-            ,projectRepository);
-        
+        Map<User, Project> result = ProjectUtils.assignTeamsToProjects(getAllProjectsPreferences(), userRepository,
+                projectPreferenceRepository, projectRepository);
+
         Assignment assignment = Assignment.builder()
-            .branch(UserUtils.getCurrentUser(userRepository).getBranch())
-            .date(new Date())
-            .completed(false)
-            .initiated(true)
-            .build();
+                .branch(UserUtils.getCurrentUser(userRepository).getBranch())
+                .date(new Date())
+                .completed(false)
+                .initiated(true)
+                .build();
         assignmentRepository.save(assignment);
         return result;
-        
+
     }
 
     @Override
@@ -314,24 +341,27 @@ public class ProjectServiceImplementation implements ProjectService {
             teams.add(team);
             // Send email to the members
             // for (User member : user.getTeam().getMembers()) {
-            //     String userMessage = "Dear " + member.getFirstName() + ",\n\n";
-            //     userMessage += "Your team have been assigned to the project: " + project.getTitle() +" .\n";
-            //     userMessage += "Please review the details and get started as soon as possible.\n\n";
-            //     userMessage += "Best regards,\nThe Project Management Team";
+            // String userMessage = "Dear " + member.getFirstName() + ",\n\n";
+            // userMessage += "Your team have been assigned to the project: " +
+            // project.getTitle() +" .\n";
+            // userMessage += "Please review the details and get started as soon as
+            // possible.\n\n";
+            // userMessage += "Best regards,\nThe Project Management Team";
 
-            //     // Send email to the user
-            //     emailService.sendInformingEmail(member, userMessage);
+            // // Send email to the user
+            // emailService.sendInformingEmail(member, userMessage);
             // }
-
 
             // Send email to the supervisors
             // for (User supervisor : project.getSupervisors()) {
-            //     String supervisorMessage = "Dear " + supervisor.getFirstName() + ",\n\n";
-            //     supervisorMessage += user.getTeam().getName() + " has been assigned to the project: " + project.getTitle()
-            //             + ".\n";
-            //     supervisorMessage += "Please ensure proper guidance and support for the assigned project.\n\n";
-            //     supervisorMessage += "Best regards,\nThe Project Management Team";
-            //     emailService.sendInformingEmail(supervisor, supervisorMessage);
+            // String supervisorMessage = "Dear " + supervisor.getFirstName() + ",\n\n";
+            // supervisorMessage += user.getTeam().getName() + " has been assigned to the
+            // project: " + project.getTitle()
+            // + ".\n";
+            // supervisorMessage += "Please ensure proper guidance and support for the
+            // assigned project.\n\n";
+            // supervisorMessage += "Best regards,\nThe Project Management Team";
+            // emailService.sendInformingEmail(supervisor, supervisorMessage);
             // }
         }
 
@@ -340,8 +370,7 @@ public class ProjectServiceImplementation implements ProjectService {
         userRepository.saveAll(responsibleUsers);
         teamRepository.saveAll(teams);
         assignmentService.completeAssignment();
-        
-        
+
     }
 
     @Override
@@ -351,9 +380,4 @@ public class ProjectServiceImplementation implements ProjectService {
         return FileUtils.downloadFile(project, document, DIRECTORY);
     }
 
-
-
-
 }
-
-
