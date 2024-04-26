@@ -280,7 +280,7 @@ public class ProjectServiceImplementation implements ProjectService {
 
         projectPreferenceRepository.save(teamPreference);
 
-        return "Team preferences submitted successfully !!";
+        return "Team preferences submitted successfully";
     }
 
     @Override
@@ -379,5 +379,7 @@ public class ProjectServiceImplementation implements ProjectService {
         Document document = documentRepository.findById(docId).get();
         return FileUtils.downloadFile(project, document, DIRECTORY);
     }
+
+    
 
 }
