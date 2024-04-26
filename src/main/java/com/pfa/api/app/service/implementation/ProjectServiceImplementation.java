@@ -6,7 +6,9 @@ import java.nio.file.Paths;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -156,6 +158,11 @@ public class ProjectServiceImplementation implements ProjectService {
         // Paginate the projects list
         int fromIndex = (pageNumber - 1) * pageSize;
         int toIndex = Math.min(fromIndex + pageSize, projects.size());
+        // 
+        if (fromIndex>toIndex) {
+            return new ArrayList<>();
+        }
+        // 
         List<Project> paginatedProjects = projects.subList(fromIndex, toIndex);
 
         return paginatedProjects.stream()
@@ -378,6 +385,23 @@ public class ProjectServiceImplementation implements ProjectService {
         Project project = projectRepository.findById(projectId).get();
         Document document = documentRepository.findById(docId).get();
         return FileUtils.downloadFile(project, document, DIRECTORY);
+    }
+
+    @Override
+    public List<String> getAllAcademicYears() {
+        List<Project> projects;
+        List<String> academicYears = new ArrayList();
+        projects = projectRepository.findAll();
+        for (Project project : projects) {
+            academicYears.add(project.getAcademicYear());
+        }
+        Set<String> uniqueYears = new HashSet<>(academicYears);
+        List<String> uniqueYearsList =new ArrayList<>(uniqueYears);
+        Collections.sort(uniqueYearsList,Collections.reverseOrder());
+        
+        return new ArrayList<>(uniqueYearsList);
+       
+       
     }
 
 }
