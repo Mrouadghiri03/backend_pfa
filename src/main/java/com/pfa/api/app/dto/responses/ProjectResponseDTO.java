@@ -29,10 +29,10 @@ public class ProjectResponseDTO {
     private String codeLink;
     private Boolean isPublic;
     private String approvalToken;
-    private Long reportId;
+    private DocumentResponseDTO reportId;
     private Long branchId;
     private List<Long> supervisorIds;
-    private List<Long> documentIds;
+    private List<DocumentResponseDTO> documentIds;
     private Long teamId;
 
     // You can include other fields or associations as needed
@@ -47,16 +47,17 @@ public class ProjectResponseDTO {
                 .techStack(project.getTechStack())
                 .codeLink(project.getCodeLink())
                 .isPublic(project.getIsPublic())
-                .approvalToken(project.getApprovalToken())
-                .reportId(project.getReport() != null ? project.getReport().getId() : null)
                 .branchId(project.getBranch() != null ? project.getBranch().getId() : null)
+                .approvalToken(project.getApprovalToken())
+                .reportId(project.getReport() != null ? DocumentResponseDTO.fromEntity(project.getReport()) : null)
                 .supervisorIds(project.getSupervisors() != null
-                        ? project.getSupervisors().stream().map(User::getId).collect(Collectors.toList())
-                        : null)
+                ? project.getSupervisors().stream().map(User::getId).collect(Collectors.toList())
+                : null)
                 .documentIds(project.getDocuments() != null
-                        ? project.getDocuments().stream().map(Document::getId).collect(Collectors.toList())
-                        : null)
+                ? project.getDocuments().stream().map(DocumentResponseDTO::fromEntity).collect(Collectors.toList())
+                : null)
                 .teamId(project.getTeam() != null ? project.getTeam().getId() : null)
                 .build();
-    }
+
+        }
 }

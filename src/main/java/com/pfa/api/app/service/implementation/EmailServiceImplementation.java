@@ -64,8 +64,8 @@ public class EmailServiceImplementation implements EmailService{
             context.setVariable("branch", newUser.getStudiedBranch().getName());
             context.setVariable("cin", newUser.getCin());
             context.setVariable("inscriptionNumber", newUser.getInscriptionNumber());
-            context.setVariable("acceptURL", "http://localhost:8080/api/auth/accept?token=" + token);
-            context.setVariable("rejectURL", "http://localhost:8080/api/auth/reject?token=" + token);
+            context.setVariable("acceptURL", "http://localhost:8080/api/auth/accept/token" + token);
+            context.setVariable("rejectURL", "http://localhost:8080/api/auth/reject/token" + token);
 
 
             String htmlContent = templateEngine.process("email/emailNotificationToHeadOfBranch", context);

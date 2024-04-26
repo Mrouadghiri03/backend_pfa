@@ -114,8 +114,8 @@ public class AuthenticationService {
         
 
         // using this part when i want that confirmation stuff
-        // Confirmation confirmation = new Confirmation(user);
-        // confirmationRepository.save(confirmation);
+        Confirmation confirmation = new Confirmation(user);
+        confirmationRepository.save(confirmation);
         // emailService.sendNotificationEmailToHeadOfBranch(headOfBranch , user ,confirmation.getToken());
 
         
@@ -150,6 +150,10 @@ public class AuthenticationService {
             realUser.setEnabled(true);
             userRepository.save(realUser);
             confirmationRepository.delete(confirmation);
+            JoinRequest joinRequest = user.get().getJoinRequest();
+            joinRequest.setUser(null);
+            user.get().setJoinRequest(null);
+            joinRequestRepository.delete(joinRequest);
             return true;
         }
         return false;
@@ -163,7 +167,33 @@ public class AuthenticationService {
         Optional<User> user = userRepository.findByEmail(confirmation.getUser().getEmail());
         if (user.isPresent()) {
             emailService.sendConfirmationEmail(user.get().getFirstName(), user.get().getEmail(), token);
-            
+            JoinRequest joinRequest = user.get().getJoinRequest();
+            joinRequest.setUser(null);
+            user.get().setJoinRequest(null);
+            joinRequestRepository.delete(joinRequest);
+        }
+    }
+    public void acceptUser(Long id) {
+        Optional<User> user = userRepository.findById(id);
+        if (user.isPresent()) {
+            emailService.sendConfirmationEmail(user.get().getFirstName(), user.get().getEmail(), user.get().getConfirmation().getToken());
+            JoinRequest joinRequest = user.get().getJoinRequest();
+            joinRequest.setUser(null);
+            user.get().setJoinRequest(null);
+            joinRequestRepository.delete(joinRequest);
+        }
+    }
+
+    public void rejectUser(Long id) {
+        Optional<User> user = userRepository.findById(id);
+        if (user.isPresent()) {
+            emailService.sendRejectionEmail(user.get(), user.get().getConfirmation().getToken());
+            confirmationRepository.delete(user.get().getConfirmation());
+            JoinRequest joinRequest = user.get().getJoinRequest();
+            joinRequest.setUser(null);
+            user.get().setJoinRequest(null);
+            joinRequestRepository.delete(joinRequest);
+            userRepository.delete(user.get());
         }
     }
 
@@ -173,6 +203,10 @@ public class AuthenticationService {
         if (user.isPresent()) {
             emailService.sendRejectionEmail(user.get(), token);
             confirmationRepository.delete(confirmation);
+            JoinRequest joinRequest = user.get().getJoinRequest();
+            joinRequest.setUser(null);
+            user.get().setJoinRequest(null);
+            joinRequestRepository.delete(joinRequest);
             userRepository.delete(user.get());
         }
     }

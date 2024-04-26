@@ -131,9 +131,9 @@ public class ProjectController {
     //endpoint for submitting Project preferences:
     @PreAuthorize("hasRole('ROLE_RESPONSIBLE')")
     @PostMapping("/preferences")
-    public ResponseEntity<String> submitProjectPreference(@RequestBody Map<Long, Integer> projectPreferences) throws NotFoundException {
+    public ResponseEntity<JsonResponse> submitProjectPreference(@RequestBody Map<Long, Integer> projectPreferences) throws NotFoundException {
         String message = projectService.submitProjectPreference(projectPreferences);
-        return ResponseEntity.ok(message);
+        return ResponseEntity.ok(new JsonResponse(200, message));
     }
 
     @GetMapping("/preferences")

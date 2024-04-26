@@ -6,13 +6,17 @@ import org.hibernate.PropertyValueException;
 import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
+
+import com.pfa.api.app.JsonRsponse.JsonResponse;
 
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
@@ -60,8 +64,8 @@ public class AuthController {
         return modelAndView;
     }
 
-    @GetMapping("/accept")
-    public ModelAndView acceptUserAccount(@RequestParam("token") String token){
+    @GetMapping("/accept/token/{token}")
+    public ModelAndView acceptUserAccount(@PathVariable("token") String token){
         authenticationService.acceptUser(token);
         ModelAndView modelAndView = new ModelAndView();
 
@@ -73,8 +77,8 @@ public class AuthController {
 
     }
 
-    @GetMapping("/reject")
-    public ModelAndView rejectUserAccount(@RequestParam("token") String token){
+    @GetMapping("/reject/token/{token}")
+    public ModelAndView rejectUserAccount(@PathVariable("token") String token){
         authenticationService.rejectUser(token);
         ModelAndView modelAndView = new ModelAndView();
 
@@ -83,6 +87,22 @@ public class AuthController {
         modelAndView.setStatus(HttpStatus.OK);
         
         return modelAndView;
+
+    }
+
+    @PostMapping("/accept")
+    // @PreAuthorize("hasRole('ROLE_HEAD_OF_BRANCH')")
+    public ResponseEntity<JsonResponse> acceptUser(@RequestParam("user") Long user){
+        authenticationService.acceptUser(user);
+        return new ResponseEntity<JsonResponse>(new JsonResponse(200, "The user is accepted ,he can login now"), HttpStatus.OK);
+
+    }
+
+    @PostMapping("/reject")
+    // @PreAuthorize("hasRole('ROLE_HEAD_OF_BRANCH')")
+    public ResponseEntity<JsonResponse> rejectUser(@RequestParam("user") Long user){
+        authenticationService.rejectUser(user);
+        return new ResponseEntity<JsonResponse>(new JsonResponse(200, "The user is rejected ,he can't login now"), HttpStatus.OK);
 
     }
 }
