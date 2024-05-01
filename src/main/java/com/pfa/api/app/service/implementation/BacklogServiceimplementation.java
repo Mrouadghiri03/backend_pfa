@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class BacklogServiceimplementation implements BacklogService{
+public class BacklogServiceImplementation implements BacklogService{
      private final UserStoryRepository userStoryRepository;
      private final BacklogRepository backlogRepository;
     @Override
@@ -27,11 +27,11 @@ public class BacklogServiceimplementation implements BacklogService{
        
     }
     @Override
-    public BacklogResponseDTO getBacklogByIdProject(Long idProject) {
-        Backlog backlog = backlogRepository.findByProjectId(idProject);
-        List<UserStory> userStories = userStoryRepository.findByBacklogId(backlog.getId());
+    public BacklogResponseDTO getBacklogById(Long id) {
+        Backlog backlog = backlogRepository.findById(id).orElseThrow(
+            () -> new RuntimeException("Backlog not found")
+        );
 
-        backlog.setUserStories(userStories);
 
         return BacklogResponseDTO.fromEntity(backlog);
        

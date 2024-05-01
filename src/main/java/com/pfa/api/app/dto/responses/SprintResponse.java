@@ -1,5 +1,6 @@
 package com.pfa.api.app.dto.responses;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,26 +29,34 @@ public class SprintResponse {
 
     private Long projectID;
 
-    private List <UserStory> userStories;
+    private List<UserStoryResponseDTO> userStories;
 
     public static SprintResponse fromEntity(Sprint sprint) {
         List<UserStory> userStoryIds = null;
-        if (sprint.getUserStories()!=null) {
-            
+        if (sprint.getUserStories() != null) {
+
             userStoryIds = sprint.getUserStories().stream()
-                .collect(Collectors.toList());
+                    .collect(Collectors.toList());
         }
 
         return SprintResponse.builder()
-                 .id(sprint.getId())
-                 .name(sprint.getName())
-                 .starDate(sprint.getStart_date())
-                 .endDate(sprint.getEnd_date())
-                 .velocity(sprint.getVelocity())
-                 .closed(sprint.isClosed())
-                 .projectID(sprint.getProject()==null?null:sprint.getProject().getId())
-                 .userStories(sprint.getUserStories()==null?null:userStoryIds)
+                .id(sprint.getId())
+                .name(sprint.getName())
+                .starDate(sprint.getStart_date())
+                .endDate(sprint.getEnd_date())
+                .velocity(sprint.getVelocity())
+                .closed(sprint.isClosed())
+                .projectID(sprint.getProject() == null ? null : sprint.getProject().getId())
+                .userStories(fromEntity(sprint.getUserStories()))
                 .build();
     }
-    
+
+    public static List<UserStoryResponseDTO> fromEntity(List<UserStory> userStories) {
+        List<UserStoryResponseDTO> responseDTOs = new ArrayList<>();
+        for (UserStory userStory : userStories) {
+            responseDTOs.add(UserStoryResponseDTO.fromEntity(userStory));
+        }
+        return responseDTOs;
+    }
+
 }

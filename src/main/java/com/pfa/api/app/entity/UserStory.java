@@ -1,8 +1,5 @@
 package com.pfa.api.app.entity;
 
-
-
-
 import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -30,45 +27,39 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Table
 public class UserStory {
-    
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-     private Long id;
-     
-    @Column(nullable = false)
-     private String name;
-    
-    @Column(nullable = false)
-     private Long story_points; 
 
-    @Column(nullable = false)
-     private Long priority;
-    
-    
-    @Column(nullable = false)
-     private  String status; 
-    
-    @Column(nullable = false)
-     private  String description; 
-    
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
+  @Column(nullable = false)
+  private String name;
 
+  @Column(nullable = false)
+  private Long storyPoints;
 
-    @ManyToOne(targetEntity = User.class ,optional = true )
-    @JoinColumn(name = "developer_id")
-    @JsonBackReference
-      private User developer; 
-      
-    @ManyToOne(targetEntity = Backlog.class)
-        @JoinColumn(name = "backlog_id")
-        @JsonBackReference
-      private  Backlog backlog;
+  @Column(nullable = false)
+  private Long priority;
 
+  @Column(nullable = false)
+  private String status;
 
-     @ManyToOne(targetEntity=Sprint.class ,optional = true )      @JoinColumn(name = "sprint_id")
-      @JsonBackReference
-       private  Sprint sprint;
+  @Column(nullable = false)
+  private String description;
 
+  @ManyToOne(targetEntity = User.class, optional = true)
+  @JoinColumn(name = "developer_id")
+  @JsonBackReference
+  private User developer;
 
+  @ManyToOne(targetEntity = Backlog.class)
+  @JoinColumn(name = "backlog_id")
+  @JsonBackReference
+  private Backlog backlog;
+
+  @ManyToOne(targetEntity = Sprint.class, optional = true)
+  @JoinColumn(name = "sprint_id")
+  @JsonBackReference
+  private Sprint sprint;
 
 }

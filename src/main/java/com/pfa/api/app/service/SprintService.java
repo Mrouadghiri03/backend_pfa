@@ -13,7 +13,7 @@ public interface SprintService {
 
     SprintResponse getSprint(Long id);
 
-    List<SprintResponse> getAllSprints();
+    List<SprintResponse> getAllSprints(Long projectId);
 
     SprintResponse deleteSprint(Long id);
 }

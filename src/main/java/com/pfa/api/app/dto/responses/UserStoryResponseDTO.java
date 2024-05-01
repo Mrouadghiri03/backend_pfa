@@ -19,10 +19,10 @@ public class UserStoryResponseDTO {
     private String name;
     private String description;
     private String status;
-    private Long priorite;
-    private Long story_points; 
+    private Long priority;
+    private Long storyPoints; 
 
-    private Long developerId;
+    private UserResponseDTO developer;
 
     private Long sprintId;
     private Long backlogId;
@@ -34,13 +34,15 @@ public class UserStoryResponseDTO {
                 .name(userStory.getName())
                 .description(userStory.getDescription())
                 .status(userStory.getStatus())
-                .priorite(userStory.getPriority())
-                .story_points(userStory.getStory_points())
-                .developerId(userStory.getDeveloper()==null ? null : userStory.getDeveloper().getId())
+                .priority(userStory.getPriority())
+                .storyPoints(userStory.getStoryPoints())
+                .developer(userStory.getDeveloper()==null ? null : UserResponseDTO.fromEntity(userStory.getDeveloper()))
                 .sprintId(userStory.getSprint()==null ? null : userStory.getSprint().getId())
                 .backlogId(userStory.getBacklog().getId())
                 .build();
     }
+    
+
 
     
     

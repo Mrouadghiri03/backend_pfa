@@ -38,25 +38,34 @@ public class UserStoryImplementation implements UserStoryService {
     @Override
     public UserStoryResponseDTO addUserStory(UserStoryDTO userStoryDTO) {
        
-            Backlog backlog = backlogRepository.findById(userStoryDTO.getBacklogId()).get();
+            Backlog backlog = backlogRepository.findById(userStoryDTO.getBacklogId()).orElseThrow(
+                    () -> new RuntimeException("Backlog not found")
+            );
             
              UserStory userStory =UserStory.builder()
                                .name(userStoryDTO.getName())
                                .description(userStoryDTO.getDescription())
-                               .priority(userStoryDTO.getPriorite())
-                               .story_points(userStoryDTO.getStory_points())
+                               .priority(userStoryDTO.getPriority())
+                               .storyPoints(userStoryDTO.getStoryPoints())
                                .status(userStoryDTO.getStatus())
                                .backlog(backlog)
                                .build();
 
-            
+            if (userStoryDTO.getDeveloperId() != null) {
+                User develop = userRepository.findById(userStoryDTO.getDeveloperId()).orElseThrow(
+                        () -> new RuntimeException("Develop not found")
+                );
+                userStory.setDeveloper(develop);
+            }
          UserStory savUserStory =  userStoryRepository.save(userStory);
         return UserStoryResponseDTO.fromEntity(savUserStory);
     }
 
     @Override
     public UserStoryResponseDTO deleteUserStory(Long id) {
-        UserStory userStory =userStoryRepository.findById(id).get();
+        UserStory userStory =userStoryRepository.findById(id).orElseThrow(
+                () -> new RuntimeException("UserStory not found")
+        );
         userStoryRepository.delete(userStory);
         return UserStoryResponseDTO.fromEntity(userStory) ;
     }
@@ -95,11 +104,11 @@ public class UserStoryImplementation implements UserStoryService {
                if (userStoryDTO.getStatus()!=null) {
                    userStory.setStatus(userStoryDTO.getStatus());
                }
-               if(userStoryDTO.getStory_points()!=null){
-                    userStory.setStory_points(userStoryDTO.getStory_points());
+               if(userStoryDTO.getStoryPoints()!=null){
+                    userStory.setStoryPoints(userStoryDTO.getStoryPoints());
                }
-               if (userStoryDTO.getPriorite()!=null) {
-                userStory.setPriority(userStoryDTO.getPriorite());;
+               if (userStoryDTO.getPriority()!=null) {
+                userStory.setPriority(userStoryDTO.getPriority());;
                 
                }
 

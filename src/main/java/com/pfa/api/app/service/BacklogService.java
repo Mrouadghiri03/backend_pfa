@@ -9,7 +9,7 @@ import com.pfa.api.app.entity.Backlog;
 
 public interface BacklogService {
       Backlog AddBacklog(Backlog backlog); 
-      BacklogResponseDTO getBacklogByIdProject(Long idProject);
+      BacklogResponseDTO getBacklogById(Long id);
       
       
 

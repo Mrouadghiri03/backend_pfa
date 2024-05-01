@@ -14,13 +14,14 @@ public class UserStoryDTO {
 
     private String status;
 
-    private Long priorite;
+    private Long priority;
 
-    private Long story_points; 
+    private Long storyPoints; 
 
     private Long developerId;
 
     private Long sprintId;
+    
     private Long backlogId;
     
 }

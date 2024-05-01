@@ -96,14 +96,11 @@ public class SprintServiceImplementation implements SprintService{
     }
 
     @Override
-    public List<SprintResponse> getAllSprints() {
-        List<Sprint> sprintResponses = sprintRepository.findAll();
-        return sprintResponses.stream()
-                .map(SprintResponse::fromEntity)
-                .collect(Collectors.toList());
-        
-        
-       
+    public List<SprintResponse> getAllSprints(Long projectId) {
+       List<Sprint> sprintResponses = sprintRepository.findByProjectId(projectId);
+       return sprintResponses.stream()
+             .map(SprintResponse::fromEntity)
+             .collect(Collectors.toList());
     }
     
 }
