@@ -12,13 +12,16 @@ public interface UserStoryService {
 
     UserStoryResponseDTO getUserStory(Long id);
 
-     List<UserStoryResponseDTO>  getAllUserStory();
+     List<UserStoryResponseDTO>  getAllUserStory(Long id);
 
     UserStoryResponseDTO updateUserStory(UserStoryDTO userStoryDTO ,Long id);
 
 
     UserStoryResponseDTO deleteUserStory(Long id);
-    UserStoryResponseDTO AffectUserStory(Long id,Long developId,Long sprintID);
+
+    UserStoryResponseDTO AffectDevelopToUserStory(Long id,Long developId);
+
+    UserStoryResponseDTO AffectSprintToUserStory(Long id,Long sprintId);
 
 
 }

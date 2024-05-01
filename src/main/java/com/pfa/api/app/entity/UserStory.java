@@ -65,8 +65,7 @@ public class UserStory {
       private  Backlog backlog;
 
 
-     @ManyToOne(targetEntity=Sprint.class ,optional = true )
-      @JoinColumn(name = "sprint_id")
+     @ManyToOne(targetEntity=Sprint.class ,optional = true )      @JoinColumn(name = "sprint_id")
       @JsonBackReference
        private  Sprint sprint;
 

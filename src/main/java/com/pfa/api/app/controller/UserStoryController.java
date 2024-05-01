@@ -40,16 +40,16 @@ public class UserStoryController {
     
 
     @PostMapping
-    public ResponseEntity<JsonResponse> CreateUserStory(@RequestBody UserStoryDTO userStoryDTO) {
+    public ResponseEntity<JsonResponse> CreateUserStory(@RequestBody UserStoryDTO userStoryDTO)throws NotFoundException {
         UserStoryResponseDTO userStoryResponseDTO = userStoryService.addUserStory(userStoryDTO);
        return new ResponseEntity<JsonResponse>(new JsonResponse(201, "UserStory created successfully"), HttpStatus.CREATED) ;
         
         
     }
 
-    @GetMapping
-    public ResponseEntity<List<UserStoryResponseDTO>> getUserStories()throws NotFoundException {
-           List<UserStoryResponseDTO> userStoryResponseDTOs =userStoryService.getAllUserStory();
+    @GetMapping("backlog/{id}")
+    public ResponseEntity<List<UserStoryResponseDTO>> getUserStories(@PathVariable Long id)throws NotFoundException {
+           List<UserStoryResponseDTO> userStoryResponseDTOs =userStoryService.getAllUserStory(id);
            return ResponseEntity.ok(userStoryResponseDTOs);
     
     }
@@ -60,14 +60,27 @@ public class UserStoryController {
         return ResponseEntity.ok(userStoryResponseDTO);
     }
     @PutMapping("/{id}")
-    public ResponseEntity<JsonResponse> updateUserStory(@PathVariable Long id, @RequestBody UserStoryDTO userStoryDTO) {
+    public ResponseEntity<JsonResponse> updateUserStory(@PathVariable Long id, @RequestBody UserStoryDTO userStoryDTO)throws NotFoundException {
           UserStoryResponseDTO userStoryResponseDTO = userStoryService.updateUserStory(userStoryDTO, id);
         
         return new ResponseEntity<JsonResponse>(new JsonResponse(200, "UserStory has been updated"), HttpStatus.ACCEPTED);
     }
 
+    @PutMapping("/{id}/develop/{developId}")
+    public ResponseEntity<UserStoryResponseDTO> AffectDevelop(@PathVariable Long id,@PathVariable Long developId )throws NotFoundException{
+        UserStoryResponseDTO entity = userStoryService.AffectDevelopToUserStory(id,developId);
+        
+        return ResponseEntity.ok(entity);
+    }
+ @PutMapping("/{id}/sprint/{sprintID}")
+    public ResponseEntity<UserStoryResponseDTO> AffectSprint(@PathVariable Long id,@PathVariable Long sprintID )throws NotFoundException{
+        UserStoryResponseDTO entity = userStoryService.AffectSprintToUserStory(id,sprintID);
+        
+        return ResponseEntity.ok(entity);
+    }
+
    @DeleteMapping("/{id}")
-   public ResponseEntity<JsonResponse> deleteUserStory(@PathVariable Long id ) {
+   public ResponseEntity<JsonResponse> deleteUserStory(@PathVariable Long id )throws NotFoundException {
     UserStoryResponseDTO userStoryResponseDTO = userStoryService.deleteUserStory(id);
   
   return new ResponseEntity<JsonResponse>(new JsonResponse(200, "UserStory has been Deleted"), HttpStatus.ACCEPTED);

@@ -28,6 +28,7 @@ public class UserStoryResponseDTO {
     private Long backlogId;
 
    public static UserStoryResponseDTO fromEntity(UserStory userStory) {
+
         return UserStoryResponseDTO.builder()
                 .id(userStory.getId())
                 .name(userStory.getName())
@@ -35,8 +36,8 @@ public class UserStoryResponseDTO {
                 .status(userStory.getStatus())
                 .priorite(userStory.getPriority())
                 .story_points(userStory.getStory_points())
-                .developerId(userStory.getDeveloper().getId())
-                .sprintId(userStory.getSprint().getId())
+                .developerId(userStory.getDeveloper()==null ? null : userStory.getDeveloper().getId())
+                .sprintId(userStory.getSprint()==null ? null : userStory.getSprint().getId())
                 .backlogId(userStory.getBacklog().getId())
                 .build();
     }

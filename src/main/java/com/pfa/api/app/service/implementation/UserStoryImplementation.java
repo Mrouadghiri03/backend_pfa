@@ -1,5 +1,6 @@
 package com.pfa.api.app.service.implementation;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -36,18 +37,7 @@ public class UserStoryImplementation implements UserStoryService {
     
     @Override
     public UserStoryResponseDTO addUserStory(UserStoryDTO userStoryDTO) {
-        User user = null;
-        Sprint sprint = null;
-        if (userStoryDTO.getDeveloperId() != null) {
-           
-            user = userRepository.findById(userStoryDTO.getDeveloperId()).get();
-            
-        }
-        if (userStoryDTO.getSprintId() != null) {
-           
-            sprint = sprintRepository.findById(userStoryDTO.getSprintId()).get();
-            
-        }
+       
             Backlog backlog = backlogRepository.findById(userStoryDTO.getBacklogId()).get();
             
              UserStory userStory =UserStory.builder()
@@ -57,8 +47,6 @@ public class UserStoryImplementation implements UserStoryService {
                                .story_points(userStoryDTO.getStory_points())
                                .status(userStoryDTO.getStatus())
                                .backlog(backlog)
-                               .developer(user)
-                               .sprint(sprint)
                                .build();
 
             
@@ -74,22 +62,29 @@ public class UserStoryImplementation implements UserStoryService {
     }
 
     @Override
-    public List<UserStoryResponseDTO>  getAllUserStory() {
-        List<UserStory> userStory = userStoryRepository.findAll();
-        return userStory.stream()
+    public List<UserStoryResponseDTO>  getAllUserStory(Long id) {
+        
+        List<UserStory> userStories = userStoryRepository.findAll();
+        List<UserStory> userStoriesFilteredByBacklog = new ArrayList<>();
+        for (UserStory userStory : userStories) {
+            if (userStory.getBacklog().getId().equals(id)) {
+                userStoriesFilteredByBacklog.add(userStory);
+            }
+        }
+        return userStoriesFilteredByBacklog.stream()
                 .map(UserStoryResponseDTO::fromEntity)
                 .collect(Collectors.toList());
     }
 
     @Override
     public UserStoryResponseDTO getUserStory(Long id) {
-        UserStory userStory = userStoryRepository.findById(id).get();
+        UserStory userStory = userStoryRepository.findById(id).orElseThrow (() -> new RuntimeException("userStory not found"));
         return UserStoryResponseDTO.fromEntity(userStory);
     }
 
     @Override
     public UserStoryResponseDTO updateUserStory(UserStoryDTO userStoryDTO ,Long id) {
-               UserStory userStory = userStoryRepository.findById(id).get();
+               UserStory userStory = userStoryRepository.findById(id).orElseThrow (() -> new RuntimeException("userStory not found"));
 
                if (userStoryDTO.getName()!=null) {
                   userStory.setName(userStoryDTO.getName());
@@ -100,10 +95,10 @@ public class UserStoryImplementation implements UserStoryService {
                if (userStoryDTO.getStatus()!=null) {
                    userStory.setStatus(userStoryDTO.getStatus());
                }
-               if(userStoryDTO.getStory_points()!=0){
+               if(userStoryDTO.getStory_points()!=null){
                     userStory.setStory_points(userStoryDTO.getStory_points());
                }
-               if (userStoryDTO.getPriorite()!=0) {
+               if (userStoryDTO.getPriorite()!=null) {
                 userStory.setPriority(userStoryDTO.getPriorite());;
                 
                }
@@ -114,10 +109,26 @@ public class UserStoryImplementation implements UserStoryService {
     }
   
     @Override
-    public UserStoryResponseDTO  AffectUserStory(Long id,Long developId,Long sprintID){
-        UserStory userStory = userStoryRepository.findById(id).get();
+    public UserStoryResponseDTO  AffectDevelopToUserStory(Long id,Long developId){
+    
+        UserStory userStory  = userStoryRepository.findById(id).orElseThrow (() -> new RuntimeException("userStory not found"));
+        User develop = userRepository.findById(developId).orElseThrow (() -> new RuntimeException("Develop not found"));
+         
+        userStory.setDeveloper(develop);
+        userStoryRepository.save(userStory);
         
-  return null;
+  return UserStoryResponseDTO.fromEntity(userStory);
+   } 
+   @Override
+    public UserStoryResponseDTO  AffectSprintToUserStory(Long id,Long sprintId){
+    
+        UserStory userStory  = userStoryRepository.findById(id).orElseThrow (() -> new RuntimeException("userStory not found"));
+        Sprint sprint = sprintRepository.findById(sprintId).orElseThrow (() -> new RuntimeException("Sprint not found"));
+         
+        userStory.setSprint(sprint);
+        userStoryRepository.save(userStory);
+        
+  return UserStoryResponseDTO.fromEntity(userStory);
    }
     
 }
