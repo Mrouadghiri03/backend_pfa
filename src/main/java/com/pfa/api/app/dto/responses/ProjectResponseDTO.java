@@ -34,6 +34,7 @@ public class ProjectResponseDTO {
     private List<Long> supervisorIds;
     private List<DocumentResponseDTO> documentIds;
     private Long teamId;
+    private Long backlogId ;
 
     // You can include other fields or associations as needed
 
@@ -47,6 +48,7 @@ public class ProjectResponseDTO {
                 .techStack(project.getTechStack())
                 .codeLink(project.getCodeLink())
                 .isPublic(project.getIsPublic())
+                .backlogId(project.getBacklog() != null ? project.getBacklog().getId() : null)
                 .branchId(project.getBranch() != null ? project.getBranch().getId() : null)
                 .approvalToken(project.getApprovalToken())
                 .reportId(project.getReport() != null ? DocumentResponseDTO.fromEntity(project.getReport()) : null)

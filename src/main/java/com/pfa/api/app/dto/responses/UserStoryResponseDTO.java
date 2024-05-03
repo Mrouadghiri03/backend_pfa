@@ -1,5 +1,8 @@
 package com.pfa.api.app.dto.responses;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.pfa.api.app.entity.UserStory;
 
 import lombok.AllArgsConstructor;
@@ -21,25 +24,27 @@ public class UserStoryResponseDTO {
     private String status;
     private Long priority;
     private Long storyPoints; 
-
+    private List<Long> tags;
     private UserResponseDTO developer;
-
+    private String developerName;
     private Long sprintId;
     private Long backlogId;
 
    public static UserStoryResponseDTO fromEntity(UserStory userStory) {
 
         return UserStoryResponseDTO.builder()
-                .id(userStory.getId())
-                .name(userStory.getName())
-                .description(userStory.getDescription())
-                .status(userStory.getStatus())
-                .priority(userStory.getPriority())
-                .storyPoints(userStory.getStoryPoints())
-                .developer(userStory.getDeveloper()==null ? null : UserResponseDTO.fromEntity(userStory.getDeveloper()))
-                .sprintId(userStory.getSprint()==null ? null : userStory.getSprint().getId())
-                .backlogId(userStory.getBacklog().getId())
-                .build();
+            .id(userStory.getId())
+            .name(userStory.getName())
+            .description(userStory.getDescription())
+            .status(userStory.getStatus())
+            .tags(new ArrayList<>(List.of(userStory.getPriority(), userStory.getStoryPoints())))
+            .priority(userStory.getPriority())
+            .storyPoints(userStory.getStoryPoints())
+            .developerName(userStory.getDeveloper()==null ? null : userStory.getDeveloper().getFirstName() + " " + userStory.getDeveloper().getLastName())
+            .developer(userStory.getDeveloper()==null ? null : UserResponseDTO.fromEntity(userStory.getDeveloper()))
+            .sprintId(userStory.getSprint()==null ? null : userStory.getSprint().getId())
+            .backlogId(userStory.getBacklog().getId())
+            .build();
     }
     
 

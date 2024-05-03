@@ -16,13 +16,15 @@ public class DocumentResponseDTO {
     
     private Long id;
     private String docName;
+    private Integer fileSize;
     private List<CommentResponseDTO> comments;
 
     public static DocumentResponseDTO fromEntity(Document document) {
         return DocumentResponseDTO.builder()
                 .id(document.getId())
                 .docName(document.getDocName())
-                .comments(document.getComments().stream().map(CommentResponseDTO::fromEntity).collect(Collectors.toList()))
+                .fileSize(document.getFileSize())
+                .comments(document.getComments() != null? document.getComments().stream().map(CommentResponseDTO::fromEntity).collect(Collectors.toList()): null)
                 .build();
     }
 }
