@@ -30,6 +30,7 @@ import com.pfa.api.app.dto.responses.TeamPreferenceResponseDTO;
 import com.pfa.api.app.entity.Assignment;
 import com.pfa.api.app.entity.Branch;
 import com.pfa.api.app.entity.Document;
+import com.pfa.api.app.entity.Notification;
 import com.pfa.api.app.entity.Project;
 import com.pfa.api.app.entity.Team;
 import com.pfa.api.app.entity.user.TeamPreference;
@@ -37,6 +38,7 @@ import com.pfa.api.app.entity.user.User;
 import com.pfa.api.app.repository.AssignmentRepository;
 import com.pfa.api.app.repository.BranchRepository;
 import com.pfa.api.app.repository.DocumentRepository;
+import com.pfa.api.app.repository.NotificationRepository;
 import com.pfa.api.app.repository.ProjectPreferenceRepository;
 import com.pfa.api.app.repository.ProjectRepository;
 import com.pfa.api.app.repository.TeamRepository;
@@ -65,6 +67,7 @@ public class ProjectServiceImplementation implements ProjectService {
     private final AssignmentRepository assignmentRepository;
     private final TeamRepository teamRepository;
     private final AssignmentService assignmentService;
+    private final NotificationRepository notificationRepository;
 
     @SuppressWarnings("null")
     @Override
@@ -98,7 +101,14 @@ public class ProjectServiceImplementation implements ProjectService {
             FileUtils.saveReport(report, savedProject, DIRECTORY, documentRepository);
             return ProjectResponseDTO.fromEntity(projectRepository.save(savedProject));
         }
-
+        Notification notification = Notification.builder()
+                .description("The project " + savedProject.getTitle() + " has been submitted for approval. Please review it.")
+                .creationDate(new Date())
+                .nameOfSender(owner.getFirstName()+" " + owner.getLastName())
+                .user(branch.getHeadOfBranch())
+                .type("PROJECT")
+                .build();
+        notificationRepository.save(notification);
         // email shit for the project approval
         // emailService.sendProjectApprovalEmail(savedProject);
         return ProjectResponseDTO.fromEntity(savedProject);
@@ -175,7 +185,7 @@ public class ProjectServiceImplementation implements ProjectService {
     public ProjectResponseDTO updateProject(ProjectDTO projectDTO, Long id, List<MultipartFile> files,
             MultipartFile report) throws NotFoundException {
         Project project = projectRepository.findById(id).orElseThrow(NotFoundException::new);
-
+        User currentUser = UserUtils.getCurrentUser(userRepository);
         if (projectDTO.getDescription() != null) {
             project.setDescription(projectDTO.getDescription());
         }
@@ -194,20 +204,34 @@ public class ProjectServiceImplementation implements ProjectService {
         if (projectDTO.getTechStack() != null) {
             project.setTechStack(projectDTO.getTitle());
         }
-        if (!files.isEmpty()) {
+        if (files!= null && !files.isEmpty()) {
             FileUtils.saveDocuments(files, project, DIRECTORY, documentRepository);
         }
-        if (!report.isEmpty()) {
+        if (report!=null && !report.isEmpty()) {
             if (project.getReport() == null) {
                 FileUtils.saveReport(report, project, DIRECTORY, documentRepository);
 
             } else {
-                return deleteFile(id, project.getReport().getId());
+                deleteReport(id, project.getReport().getId());
+                FileUtils.saveReport(report, project, DIRECTORY, documentRepository);
             }
         }
 
-        projectRepository.save(project);
-        return ProjectResponseDTO.fromEntity(project);
+        Project savedProject = projectRepository.save(project);
+        for (User otherSupervisor : savedProject.getSupervisors()) {
+            if (otherSupervisor != currentUser) {
+                Notification notification = Notification.builder()
+                        .description("The project " + savedProject.getTitle() + " has been updated,by the supervisor"+currentUser.getFirstName()+" "+currentUser.getLastName()+" Please review it.")
+                        .creationDate(new Date())
+                        .nameOfSender(savedProject.getBranch().getHeadOfBranch().getFirstName()+" " + savedProject.getBranch().getHeadOfBranch().getLastName())
+                        .user(otherSupervisor)
+                        .type("PROJECT")
+                        .build();
+                notificationRepository.save(notification);
+            }
+            
+        }
+        return ProjectResponseDTO.fromEntity(savedProject);
 
     }
 
@@ -220,7 +244,6 @@ public class ProjectServiceImplementation implements ProjectService {
         Optional<Document> documentOptional = project.getDocuments().stream()
                 .filter(document -> document.getId() == docId)
                 .findFirst();
-
         if (documentOptional.isPresent()) {
             Document document = documentOptional.get();
             try {
@@ -231,6 +254,25 @@ public class ProjectServiceImplementation implements ProjectService {
                 throw new RuntimeException("Failed to delete file: " + e.getMessage());
             }
             project.getDocuments().remove(document);
+        } else {
+            throw new NotFoundException();
+        }
+
+        return ProjectResponseDTO.fromEntity(projectRepository.save(project));
+    }
+
+    @Override
+    public ProjectResponseDTO deleteReport(Long id, Long reportId) throws NotFoundException {
+        Project project = projectRepository.findById(id).orElseThrow(NotFoundException::new);
+        Document report = project.getReport();
+        if (report != null && report.getId() == reportId) {
+            try {
+                Files.deleteIfExists(Paths.get(DIRECTORY + "/" + project.getId() + "/" + report.getDocName() + ".gz"));
+                project.setReport(null);
+                documentRepository.delete(report);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to delete file: " + e.getMessage());
+            }
         } else {
             throw new NotFoundException();
         }
@@ -265,13 +307,39 @@ public class ProjectServiceImplementation implements ProjectService {
         Project project = projectRepository.findById(id).orElseThrow(NotFoundException::new);
         project.setIsPublic(true);
         projectRepository.save(project);
+        for (User supervisor : project.getSupervisors()) {
+            Notification notification = Notification.builder()
+                    .description("The project " + project.getTitle() + " has been approved by the head of the branch "+project.getBranch().getName() + " . Students can now view and choose it.")
+                    .creationDate(new Date())
+                    .nameOfSender(project.getBranch().getHeadOfBranch().getFirstName()+" " + project.getBranch().getHeadOfBranch().getLastName())
+                    .user(supervisor)
+                    .type("PROJECT")
+                    .build();
+
+            // Save the notification in the database
+            notificationRepository.save(notification);
+        }
     }
 
     @Override
     public void rejectProject(Long id) throws NotFoundException {
         Project project = projectRepository.findById(id).orElseThrow(NotFoundException::new);
         project.getSupervisors().clear();
+        for (User supervisor : project.getSupervisors()) {
+            Notification notification = Notification.builder()
+                    .description("The project " + project.getTitle() + " has been rejected by the head of the branch "+project.getBranch().getName() + " . Please contact him for more details.")
+                    .creationDate(new Date())
+                    .nameOfSender(project.getBranch().getHeadOfBranch().getFirstName()+" " + project.getBranch().getHeadOfBranch().getLastName())
+                    .user(supervisor)
+                    .type("PROJECT")
+                    .build();
+
+            // Save the notification in the database
+            notificationRepository.save(notification);
+            
+        }
         projectRepository.delete(project);
+
     }
 
     ///
@@ -286,6 +354,20 @@ public class ProjectServiceImplementation implements ProjectService {
         teamPreference.setProjectPreferenceRanks(projectPreferences);
 
         projectPreferenceRepository.save(teamPreference);
+        Team team = user.getTeam();
+        for (User member : team.getMembers()) {
+            Notification notification = Notification.builder()
+                    .description("The user " + user.getFirstName() + " " + user.getLastName()
+                            + " has submitted your team's project preferences. You can see it.")
+                    .creationDate(new Date())
+                    .nameOfSender(user.getFirstName() + " " + user.getLastName())
+                    .user(member)
+                    .type("PROJECT")
+                    .build();
+
+            // Save the notification in the database
+            notificationRepository.save(notification);
+        }
 
         return "Team preferences submitted successfully !!";
     }
@@ -304,6 +386,15 @@ public class ProjectServiceImplementation implements ProjectService {
     public List<TeamPreferenceResponseDTO> getAllProjectsPreferencesResponse() {
         List<TeamPreference> projectsPreferences = projectPreferenceRepository.findAll();
         return projectsPreferences.stream()
+                .map(TeamPreferenceResponseDTO::fromEntity)
+                .collect(Collectors.toList());
+
+    }
+    @Override
+    public List<TeamPreferenceResponseDTO> getProjectPreferencesResponse(Long teamId) {
+        List<TeamPreference> projectsPreferences = projectPreferenceRepository.findAll();
+        return projectsPreferences.stream()
+                .filter(teamPreference -> teamPreference.getUser().getTeam().getId() == teamId)
                 .map(TeamPreferenceResponseDTO::fromEntity)
                 .collect(Collectors.toList());
 
@@ -347,29 +438,44 @@ public class ProjectServiceImplementation implements ProjectService {
             responsibleUsers.add(user);
             teams.add(team);
             // Send email to the members
-            // for (User member : user.getTeam().getMembers()) {
-            // String userMessage = "Dear " + member.getFirstName() + ",\n\n";
-            // userMessage += "Your team have been assigned to the project: " +
-            // project.getTitle() +" .\n";
-            // userMessage += "Please review the details and get started as soon as
-            // possible.\n\n";
-            // userMessage += "Best regards,\nThe Project Management Team";
+            for (User member : user.getTeam().getMembers()) {
+                String userMessage = "Dear " + member.getFirstName() + ",\n\n";
+                userMessage += "Your team have been assigned to the project: " +
+                project.getTitle() +" .\n";
+                userMessage += "Please review the details and get started as soon as possible.\n\n";
+                userMessage += "Best regards,\nThe Project Management Team";
 
-            // // Send email to the user
-            // emailService.sendInformingEmail(member, userMessage);
-            // }
+
+                // // Send email to the user
+                // emailService.sendInformingEmail(member, userMessage);
+                Notification notification = Notification.builder()
+                        .description("The project " + project.getTitle() + " has been assigned to your team. You can view it and start working on it.")
+                        .creationDate(new Date())
+                        .nameOfSender(project.getBranch().getHeadOfBranch().getFirstName()+" " + project.getBranch().getHeadOfBranch().getLastName())
+                        .user(member)
+                        .type("TEAM")
+                        .build();
+                
+                notificationRepository.save(notification);
+             
+            }
 
             // Send email to the supervisors
-            // for (User supervisor : project.getSupervisors()) {
-            // String supervisorMessage = "Dear " + supervisor.getFirstName() + ",\n\n";
-            // supervisorMessage += user.getTeam().getName() + " has been assigned to the
-            // project: " + project.getTitle()
-            // + ".\n";
-            // supervisorMessage += "Please ensure proper guidance and support for the
-            // assigned project.\n\n";
-            // supervisorMessage += "Best regards,\nThe Project Management Team";
-            // emailService.sendInformingEmail(supervisor, supervisorMessage);
-            // }
+            for (User supervisor : project.getSupervisors()) {
+                String supervisorMessage = "Dear " + supervisor.getFirstName() + ",\n\n";
+                supervisorMessage += user.getTeam().getName() + " has been assigned to the project: " + project.getTitle()+ ".\n";
+                supervisorMessage += "Please ensure proper guidance and support for the assigned project.\n\n";
+                supervisorMessage += "Best regards,\nThe Project Management Team";
+                // emailService.sendInformingEmail(supervisor, supervisorMessage);
+                Notification notification = Notification.builder()
+                        .description("The project " + project.getTitle() + " has been assigned to the team " + user.getTeam().getName() + ". You can view it and start working on it.")
+                        .creationDate(new Date())
+                        .nameOfSender(project.getBranch().getHeadOfBranch().getFirstName()+" " + project.getBranch().getHeadOfBranch().getLastName())
+                        .user(supervisor)
+                        .type("PROJECT")
+                        .build();
+                notificationRepository.save(notification);
+            }
         }
 
         // Save projects and users

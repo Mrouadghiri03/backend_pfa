@@ -75,9 +75,9 @@ public class ProjectController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_SUPERVISOR')")
-    public ResponseEntity<JsonResponse> updateProject(@RequestBody ProjectDTO projectDTO, @PathVariable long id,
-            @RequestParam("files") List<MultipartFile> files,
-            @RequestParam("report") MultipartFile report) throws NotFoundException {
+    public ResponseEntity<JsonResponse> updateProject(@ModelAttribute ProjectDTO projectDTO, @PathVariable long id,
+            @RequestParam(value = "files", required = false) List<MultipartFile> files,
+            @RequestParam(value = "report", required = false) MultipartFile report) throws NotFoundException {
 
         projectService.updateProject(projectDTO, id ,files,report);
         return new ResponseEntity<JsonResponse>(
@@ -137,8 +137,13 @@ public class ProjectController {
     }
 
     @GetMapping("/preferences")
-    public ResponseEntity<List<TeamPreferenceResponseDTO>> getProjectPreference() throws NotFoundException {
+    public ResponseEntity<List<TeamPreferenceResponseDTO>> getAllProjectsPreferences() throws NotFoundException {
         return new ResponseEntity<>(projectService.getAllProjectsPreferencesResponse(), HttpStatus.OK);
+    }
+
+    @GetMapping("/preferences/team")
+    public ResponseEntity<List<TeamPreferenceResponseDTO>> getProjectPreferences(@RequestParam Long teamId) throws NotFoundException {
+        return new ResponseEntity<>(projectService.getProjectPreferencesResponse(teamId), HttpStatus.OK);
     }
 
     @PostMapping("/assign")

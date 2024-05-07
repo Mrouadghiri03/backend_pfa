@@ -34,6 +34,8 @@ public interface ProjectService {
 
     ProjectResponseDTO deleteFile(Long id, Long docId) throws NotFoundException, IOException;
 
+    ProjectResponseDTO deleteReport(Long id,Long reportId) throws NotFoundException;
+
     void validateToken(String approvalToken);
 
     void approveProject(Long id) throws NotFoundException;
@@ -45,6 +47,7 @@ public interface ProjectService {
     List<TeamPreference> getAllProjectsPreferences();
 
     List<TeamPreferenceResponseDTO> getAllProjectsPreferencesResponse();
+    List<TeamPreferenceResponseDTO> getProjectPreferencesResponse(Long teamId);
 
     Map<User,Project> assignUsersToProjects() throws NotFoundException;
 
