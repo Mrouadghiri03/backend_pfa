@@ -3,7 +3,10 @@ package com.pfa.api.app.entity.user;
 import com.pfa.api.app.entity.Project;
 import com.pfa.api.app.entity.user.User;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.Map;
@@ -12,6 +15,9 @@ import java.util.Map;
 @Table(name = "team_preferences")
 @Setter
 @Getter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class TeamPreference {
 
     @Id

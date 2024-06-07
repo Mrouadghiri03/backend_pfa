@@ -3,11 +3,13 @@ package com.pfa.api.app.service.implementation;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -22,14 +24,17 @@ import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException.NotFound;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.pfa.api.app.dto.requests.ProjectDTO;
+import com.pfa.api.app.dto.requests.TeamPreferenceDTO;
 import com.pfa.api.app.dto.responses.ProjectResponseDTO;
 import com.pfa.api.app.dto.responses.TeamPreferenceResponseDTO;
 import com.pfa.api.app.entity.Assignment;
 import com.pfa.api.app.entity.Branch;
 import com.pfa.api.app.entity.Document;
+import com.pfa.api.app.entity.Folder;
 import com.pfa.api.app.entity.Notification;
 import com.pfa.api.app.entity.Project;
 import com.pfa.api.app.entity.Team;
@@ -38,6 +43,7 @@ import com.pfa.api.app.entity.user.User;
 import com.pfa.api.app.repository.AssignmentRepository;
 import com.pfa.api.app.repository.BranchRepository;
 import com.pfa.api.app.repository.DocumentRepository;
+import com.pfa.api.app.repository.FolderRepository;
 import com.pfa.api.app.repository.NotificationRepository;
 import com.pfa.api.app.repository.ProjectPreferenceRepository;
 import com.pfa.api.app.repository.ProjectRepository;
@@ -68,6 +74,7 @@ public class ProjectServiceImplementation implements ProjectService {
     private final TeamRepository teamRepository;
     private final AssignmentService assignmentService;
     private final NotificationRepository notificationRepository;
+    private final FolderRepository folderRepository;
 
     @SuppressWarnings("null")
     @Override
@@ -77,34 +84,82 @@ public class ProjectServiceImplementation implements ProjectService {
         Branch branch = branchRepository.findById(projectDTO.getBranch()).get();
         List<User> supervisors = new ArrayList<>();
         supervisors = findSupervisors(projectDTO.getSupervisors());
-        supervisors.add(owner);
 
         Project project = Project.builder()
                 .title(projectDTO.getTitle())
                 .description(projectDTO.getDescription())
                 .techStack(projectDTO.getTechStack())
                 .academicYear(projectDTO.getAcademicYear())
-                .supervisors(supervisors)
                 .codeLink(projectDTO.getCodeLink())
                 .status(projectDTO.getStatus())
                 .branch(branch)
                 .approvalToken(UUID.randomUUID().toString())
                 .isPublic(true)// false when i activate the email validation stuff
                 .build();
+ 
+        Team team = null;
+        if (!projectDTO.getTeam().equals("null")) {
+            project.setSupervisors(supervisors);
+            team = teamRepository.findById(Long.parseLong(projectDTO.getTeam())).get();
+        } else {
+            supervisors.add(owner);
+            project.setSupervisors(supervisors);
+            project.setTeam(team);
+        }
 
         Project savedProject = projectRepository.save(project);
+        Folder reportFolder = Folder.builder()
+            .name("Report")
+            .type("REPORT")
+            .project(savedProject)
+            .build();
+        Folder documentsFolder = Folder.builder()
+            .name("Documents")
+            .type("DOCUMENTS")
+            .project(savedProject)
+            .build();
+        if (!projectDTO.getTeam().equals("null")) {
+            team.setProject(savedProject);
+            teamRepository.save(team);
+            TeamPreference teamPreference = TeamPreference.builder()
+                    .user(team.getResponsible())
+                    .projectPreferenceRanks(new HashMap<>(Map.of(savedProject.getId(), 1)))
+                    .build();
+            projectPreferenceRepository.save(teamPreference);
+
+        }
 
         if (files != null && !files.isEmpty()) {
-            FileUtils.saveDocuments(files, savedProject, DIRECTORY, documentRepository);
+            // Save the documents folder first
+            documentsFolder = folderRepository.save(documentsFolder);
+            
+            // Save the documents and set the folder
+            List<Document> docs = FileUtils.saveDocuments(files, savedProject, DIRECTORY, documentRepository,owner);
+            for (Document doc : docs) {
+                doc.setFolder(documentsFolder);
+            }
+            documentRepository.saveAll(docs);
         }
+
         if (report != null && !report.isEmpty()) {
-            FileUtils.saveReport(report, savedProject, DIRECTORY, documentRepository);
-            return ProjectResponseDTO.fromEntity(projectRepository.save(savedProject));
+            // Save the report folder first
+            reportFolder = folderRepository.save(reportFolder);
+
+            // Save the report document and set the folder
+            Document doc = FileUtils.saveReport(report, savedProject, DIRECTORY, documentRepository,owner);
+            doc.setFolder(reportFolder);
+            doc = documentRepository.save(doc);
+
         }
+
+        projectRepository.save(savedProject);
+        folderRepository.save(documentsFolder);
+        folderRepository.save(reportFolder);
         Notification notification = Notification.builder()
-                .description("The project " + savedProject.getTitle() + " has been submitted for approval. Please review it.")
+                .description("The project " + savedProject.getTitle()
+                        + " has been submitted for approval. Please review it.")
                 .creationDate(new Date())
-                .nameOfSender(owner.getFirstName()+" " + owner.getLastName())
+                .nameOfSender(owner.getFirstName() + " " + owner.getLastName())
                 .user(branch.getHeadOfBranch())
                 .type("PROJECT")
                 .build();
@@ -168,18 +223,24 @@ public class ProjectServiceImplementation implements ProjectService {
         // Paginate the projects list
         int fromIndex = (pageNumber - 1) * pageSize;
         int toIndex = Math.min(fromIndex + pageSize, projects.size());
-        // 
-        if (fromIndex>toIndex) {
+        //
+        if (fromIndex > toIndex) {
             return new ArrayList<>();
         }
-        // 
+        //
         List<Project> paginatedProjects = projects.subList(fromIndex, toIndex);
 
         return paginatedProjects.stream()
                 .map(ProjectResponseDTO::fromEntity)
                 .collect(Collectors.toList());
     }
-
+    @Override
+    public List<ProjectResponseDTO> getAllProjects(String academicYear) throws NotFoundException{
+        List<Project> projects = projectRepository.findByAcademicYear(academicYear);
+        return projects.stream()
+                .map(ProjectResponseDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
     @SuppressWarnings("null")
     @Override
     public ProjectResponseDTO updateProject(ProjectDTO projectDTO, Long id, List<MultipartFile> files,
@@ -204,16 +265,16 @@ public class ProjectServiceImplementation implements ProjectService {
         if (projectDTO.getTechStack() != null) {
             project.setTechStack(projectDTO.getTitle());
         }
-        if (files!= null && !files.isEmpty()) {
-            FileUtils.saveDocuments(files, project, DIRECTORY, documentRepository);
+        if (files != null && !files.isEmpty()) {
+            FileUtils.saveDocuments(files, project, DIRECTORY, documentRepository,currentUser);
         }
-        if (report!=null && !report.isEmpty()) {
+        if (report != null && !report.isEmpty()) {
             if (project.getReport() == null) {
-                FileUtils.saveReport(report, project, DIRECTORY, documentRepository);
+                FileUtils.saveReport(report, project, DIRECTORY, documentRepository , currentUser);
 
             } else {
                 deleteReport(id, project.getReport().getId());
-                FileUtils.saveReport(report, project, DIRECTORY, documentRepository);
+                FileUtils.saveReport(report, project, DIRECTORY, documentRepository, currentUser);
             }
         }
 
@@ -221,15 +282,17 @@ public class ProjectServiceImplementation implements ProjectService {
         for (User otherSupervisor : savedProject.getSupervisors()) {
             if (otherSupervisor != currentUser) {
                 Notification notification = Notification.builder()
-                        .description("The project " + savedProject.getTitle() + " has been updated,by the supervisor"+currentUser.getFirstName()+" "+currentUser.getLastName()+" Please review it.")
+                        .description("The project " + savedProject.getTitle() + " has been updated,by the supervisor"
+                                + currentUser.getFirstName() + " " + currentUser.getLastName() + " Please review it.")
                         .creationDate(new Date())
-                        .nameOfSender(savedProject.getBranch().getHeadOfBranch().getFirstName()+" " + savedProject.getBranch().getHeadOfBranch().getLastName())
+                        .nameOfSender(savedProject.getBranch().getHeadOfBranch().getFirstName() + " "
+                                + savedProject.getBranch().getHeadOfBranch().getLastName())
                         .user(otherSupervisor)
                         .type("PROJECT")
                         .build();
                 notificationRepository.save(notification);
             }
-            
+
         }
         return ProjectResponseDTO.fromEntity(savedProject);
 
@@ -309,9 +372,11 @@ public class ProjectServiceImplementation implements ProjectService {
         projectRepository.save(project);
         for (User supervisor : project.getSupervisors()) {
             Notification notification = Notification.builder()
-                    .description("The project " + project.getTitle() + " has been approved by the head of the branch "+project.getBranch().getName() + " . Students can now view and choose it.")
+                    .description("The project " + project.getTitle() + " has been approved by the head of the branch "
+                            + project.getBranch().getName() + " . Students can now view and choose it.")
                     .creationDate(new Date())
-                    .nameOfSender(project.getBranch().getHeadOfBranch().getFirstName()+" " + project.getBranch().getHeadOfBranch().getLastName())
+                    .nameOfSender(project.getBranch().getHeadOfBranch().getFirstName() + " "
+                            + project.getBranch().getHeadOfBranch().getLastName())
                     .user(supervisor)
                     .type("PROJECT")
                     .build();
@@ -327,16 +392,18 @@ public class ProjectServiceImplementation implements ProjectService {
         project.getSupervisors().clear();
         for (User supervisor : project.getSupervisors()) {
             Notification notification = Notification.builder()
-                    .description("The project " + project.getTitle() + " has been rejected by the head of the branch "+project.getBranch().getName() + " . Please contact him for more details.")
+                    .description("The project " + project.getTitle() + " has been rejected by the head of the branch "
+                            + project.getBranch().getName() + " . Please contact him for more details.")
                     .creationDate(new Date())
-                    .nameOfSender(project.getBranch().getHeadOfBranch().getFirstName()+" " + project.getBranch().getHeadOfBranch().getLastName())
+                    .nameOfSender(project.getBranch().getHeadOfBranch().getFirstName() + " "
+                            + project.getBranch().getHeadOfBranch().getLastName())
                     .user(supervisor)
                     .type("PROJECT")
                     .build();
 
             // Save the notification in the database
             notificationRepository.save(notification);
-            
+
         }
         projectRepository.delete(project);
 
@@ -381,6 +448,15 @@ public class ProjectServiceImplementation implements ProjectService {
         }
         return projectPreferenceRepository.findAll();
     }
+    @Override
+    public void updateAllProjectPreferences(List<TeamPreferenceDTO> teamPreferences) throws NotFoundException {
+        for (TeamPreferenceDTO teamPreference : teamPreferences) {
+            TeamPreference teamPreferenceEntity = projectPreferenceRepository.findById(teamPreference.getId())
+                    .orElseThrow(NotFoundException::new);
+            teamPreferenceEntity.setProjectPreferenceRanks(teamPreference.getProjectPreferenceRanks());
+            projectPreferenceRepository.save(teamPreferenceEntity);
+        }
+    }
 
     @Override
     public List<TeamPreferenceResponseDTO> getAllProjectsPreferencesResponse() {
@@ -390,6 +466,7 @@ public class ProjectServiceImplementation implements ProjectService {
                 .collect(Collectors.toList());
 
     }
+
     @Override
     public List<TeamPreferenceResponseDTO> getProjectPreferencesResponse(Long teamId) {
         List<TeamPreference> projectsPreferences = projectPreferenceRepository.findAll();
@@ -405,11 +482,20 @@ public class ProjectServiceImplementation implements ProjectService {
         Map<User, Project> result = ProjectUtils.assignTeamsToProjects(getAllProjectsPreferences(), userRepository,
                 projectPreferenceRepository, projectRepository);
 
+        String academicYear = "";
+        int year = LocalDate.now().getYear();
+        int month = LocalDate.now().getMonthValue();
+        
+        if (month >= 9 && month <= 12) {
+            academicYear = year + "/" + (year + 1);
+        } else if (month >= 1 && month <= 7) {
+            academicYear = (year - 1) + "/" + year;
+        }
         Assignment assignment = Assignment.builder()
                 .branch(UserUtils.getCurrentUser(userRepository).getBranch())
-                .date(new Date())
                 .completed(false)
                 .initiated(true)
+                .academicYear(academicYear)
                 .build();
         assignmentRepository.save(assignment);
         return result;
@@ -441,36 +527,40 @@ public class ProjectServiceImplementation implements ProjectService {
             for (User member : user.getTeam().getMembers()) {
                 String userMessage = "Dear " + member.getFirstName() + ",\n\n";
                 userMessage += "Your team have been assigned to the project: " +
-                project.getTitle() +" .\n";
+                        project.getTitle() + " .\n";
                 userMessage += "Please review the details and get started as soon as possible.\n\n";
                 userMessage += "Best regards,\nThe Project Management Team";
-
 
                 // // Send email to the user
                 // emailService.sendInformingEmail(member, userMessage);
                 Notification notification = Notification.builder()
-                        .description("The project " + project.getTitle() + " has been assigned to your team. You can view it and start working on it.")
+                        .description("The project " + project.getTitle()
+                                + " has been assigned to your team. You can view it and start working on it.")
                         .creationDate(new Date())
-                        .nameOfSender(project.getBranch().getHeadOfBranch().getFirstName()+" " + project.getBranch().getHeadOfBranch().getLastName())
+                        .nameOfSender(project.getBranch().getHeadOfBranch().getFirstName() + " "
+                                + project.getBranch().getHeadOfBranch().getLastName())
                         .user(member)
                         .type("TEAM")
                         .build();
-                
+
                 notificationRepository.save(notification);
-             
+
             }
 
             // Send email to the supervisors
             for (User supervisor : project.getSupervisors()) {
                 String supervisorMessage = "Dear " + supervisor.getFirstName() + ",\n\n";
-                supervisorMessage += user.getTeam().getName() + " has been assigned to the project: " + project.getTitle()+ ".\n";
+                supervisorMessage += user.getTeam().getName() + " has been assigned to the project: "
+                        + project.getTitle() + ".\n";
                 supervisorMessage += "Please ensure proper guidance and support for the assigned project.\n\n";
                 supervisorMessage += "Best regards,\nThe Project Management Team";
                 // emailService.sendInformingEmail(supervisor, supervisorMessage);
                 Notification notification = Notification.builder()
-                        .description("The project " + project.getTitle() + " has been assigned to the team " + user.getTeam().getName() + ". You can view it and start working on it.")
+                        .description("The project " + project.getTitle() + " has been assigned to the team "
+                                + user.getTeam().getName() + ". You can view it and start working on it.")
                         .creationDate(new Date())
-                        .nameOfSender(project.getBranch().getHeadOfBranch().getFirstName()+" " + project.getBranch().getHeadOfBranch().getLastName())
+                        .nameOfSender(project.getBranch().getHeadOfBranch().getFirstName() + " "
+                                + project.getBranch().getHeadOfBranch().getLastName())
                         .user(supervisor)
                         .type("PROJECT")
                         .build();
@@ -502,12 +592,11 @@ public class ProjectServiceImplementation implements ProjectService {
             academicYears.add(project.getAcademicYear());
         }
         Set<String> uniqueYears = new HashSet<>(academicYears);
-        List<String> uniqueYearsList =new ArrayList<>(uniqueYears);
-        Collections.sort(uniqueYearsList,Collections.reverseOrder());
-        
+        List<String> uniqueYearsList = new ArrayList<>(uniqueYears);
+        Collections.sort(uniqueYearsList, Collections.reverseOrder());
+
         return new ArrayList<>(uniqueYearsList);
-       
-       
+
     }
 
 }

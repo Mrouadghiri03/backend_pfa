@@ -1,6 +1,5 @@
 package com.pfa.api.app.controller;
 
-import java.util.Date;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,18 +13,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.pfa.api.app.JsonRsponse.JsonResponse;
 import com.pfa.api.app.dto.requests.TeamDTO;
-import com.pfa.api.app.dto.responses.NotificationResponseDTO;
 import com.pfa.api.app.dto.responses.TeamResponseDTO;
-import com.pfa.api.app.dto.responses.UserResponseDTO;
-import com.pfa.api.app.entity.Notification;
-import com.pfa.api.app.entity.Team;
-import com.pfa.api.app.entity.user.User;
 import com.pfa.api.app.repository.NotificationRepository;
-import com.pfa.api.app.service.NotificationService;
 import com.pfa.api.app.service.TeamService;
 
 import lombok.RequiredArgsConstructor;
@@ -40,8 +34,8 @@ public class TeamController {
     private NotificationRepository notificationRepository;
 
     @GetMapping
-    public ResponseEntity<List<TeamResponseDTO>> getAllTeams() {
-        return ResponseEntity.ok(teamService.getAllTeams());
+    public ResponseEntity<List<TeamResponseDTO>> getAllTeams(@RequestParam String academicYear) {
+        return ResponseEntity.ok(teamService.getAllTeams(academicYear));
     }
 
     @GetMapping("/{id}")

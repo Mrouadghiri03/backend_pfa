@@ -1,12 +1,10 @@
 package com.pfa.api.app.dto.responses;
 
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.pfa.api.app.entity.Document;
+import com.pfa.api.app.entity.Folder;
 import com.pfa.api.app.entity.Project;
-import com.pfa.api.app.entity.user.User;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,10 +27,11 @@ public class ProjectResponseDTO {
     private String codeLink;
     private Boolean isPublic;
     private String approvalToken;
-    private DocumentResponseDTO reportId;
+    private List<FolderResponseDTO> folders;
+    private DocumentResponseDTO report;
     private Long branchId;
     private List<Long> supervisorIds;
-    private List<DocumentResponseDTO> documentIds;
+    private List<DocumentResponseDTO> documents;
     private Long teamId;
     private Long backlogId ;
 
@@ -48,15 +47,16 @@ public class ProjectResponseDTO {
                 .techStack(project.getTechStack())
                 .codeLink(project.getCodeLink())
                 .isPublic(project.getIsPublic())
+                .folders(project.getFolders() != null ? project.getFolders().stream().map(FolderResponseDTO::fromEntity).collect(Collectors.toList()) : null)
                 .backlogId(project.getBacklog() != null ? project.getBacklog().getId() : null)
                 .branchId(project.getBranch() != null ? project.getBranch().getId() : null)
                 .approvalToken(project.getApprovalToken())
-                .reportId(project.getReport() != null ? DocumentResponseDTO.fromEntity(project.getReport()) : null)
+                .report(project.getFolders() != null ? project.getFolders().stream().filter(folder -> folder.getType().equals("REPORT")).map(Folder::getDocuments).flatMap(List::stream).map(DocumentResponseDTO::fromEntity).findFirst().orElse(null) : null)
                 .supervisorIds(project.getSupervisors() != null
-                ? project.getSupervisors().stream().map(User::getId).collect(Collectors.toList())
+                ? project.getSupervisors().stream().map(user -> user.getId()).collect(Collectors.toList())
                 : null)
-                .documentIds(project.getDocuments() != null
-                ? project.getDocuments().stream().map(DocumentResponseDTO::fromEntity).collect(Collectors.toList())
+                .documents(project.getFolders() != null
+                ? project.getFolders().stream().filter(folder -> folder.getType().equals("DOCUMENTS")).map(Folder::getDocuments).flatMap(List::stream).map(DocumentResponseDTO::fromEntity).collect(Collectors.toList())
                 : null)
                 .teamId(project.getTeam() != null ? project.getTeam().getId() : null)
                 .build();

@@ -15,7 +15,7 @@ public interface TeamService {
     TeamResponseDTO updateTeam(Long teamId, TeamDTO teamDTO) throws NotFoundException;
     TeamResponseDTO getTeamById(Long teamId) ;
     TeamResponseDTO getTeamByName(String teamName);
-    List<TeamResponseDTO> getAllTeams();
+    List<TeamResponseDTO> getAllTeams(String academicYear);
 
 
 }

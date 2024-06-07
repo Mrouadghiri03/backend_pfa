@@ -10,6 +10,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.pfa.api.app.dto.requests.ProjectDTO;
+import com.pfa.api.app.dto.requests.TeamPreferenceDTO;
 import com.pfa.api.app.dto.responses.ProjectResponseDTO;
 import com.pfa.api.app.dto.responses.TeamPreferenceResponseDTO;
 import com.pfa.api.app.entity.Project;
@@ -26,6 +27,8 @@ public interface ProjectService {
     ProjectResponseDTO getProject(Long id) throws NotFoundException;
 
     List<ProjectResponseDTO> getAllProjects(int pageNumber,int pageSize , String academicYear) throws NotFoundException;
+    List<ProjectResponseDTO> getAllProjects(String academicYear) throws NotFoundException;
+
     List<String> getAllAcademicYears();
 
 
@@ -54,6 +57,8 @@ public interface ProjectService {
     void validateAssignments() throws NotFoundException;
 
     ResponseEntity<byte[]> downloadFile(Long projectId, Long docId);
+
+    void updateAllProjectPreferences(List<TeamPreferenceDTO> teamPreferences) throws NotFoundException;
 
     
 

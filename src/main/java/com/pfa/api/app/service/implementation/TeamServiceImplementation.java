@@ -56,6 +56,7 @@ public class TeamServiceImplementation implements TeamService {
                 .name(teamDTO.getName())
                 .members(members)
                 .responsible(currentUser)
+                .academicYear(teamDTO.getAcademicYear())
                 .build();
         team.getMembers().add(currentUser);
         Team persistedTeam = teamRepository.save(team);
@@ -63,7 +64,6 @@ public class TeamServiceImplementation implements TeamService {
                 .anyMatch(name -> name.equals(RoleName.ROLE_RESPONSIBLE.toString()))) {
             currentUser.getRoles().add(roleRepository.findByName(RoleName.ROLE_RESPONSIBLE.toString()).get());
         }
-
         currentUser.setTeam(persistedTeam);
         userRepository.save(currentUser);
 
@@ -189,8 +189,15 @@ public class TeamServiceImplementation implements TeamService {
     }
 
     @Override
-    public List<TeamResponseDTO> getAllTeams() {
-        List<Team> teams = teamRepository.findAll();
+    public List<TeamResponseDTO> getAllTeams(String academicYear) {
+
+        List<Team> teams = new ArrayList<>();
+        System.out.println(academicYear.getClass());
+        if (academicYear.equals("undefined")) {
+            teams = teamRepository.findAll();
+        }else{
+            teams = teamRepository.findByAcademicYear(academicYear);
+        }
         List<TeamResponseDTO> teamResponseDTOs = new ArrayList<>();
         for (Team team : teams) {
             TeamResponseDTO teamResponseDTO = TeamResponseDTO.fromEntity(team);
