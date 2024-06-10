@@ -15,4 +15,6 @@ public interface UserService {
 
     User updateUser(Long userId, UserDTO userDTO);
 
+    List<UserResponseDTO> getSupervisors();
+
 }

@@ -11,6 +11,8 @@ public interface PresentationService {
     PresentationResponseDTO addPresentation(PresentationDTO presentationDTO);
     List<PresentationResponseDTO> getAllPresentations();
     PresentationResponseDTO updatePresentation(Long id, PresentationDTO presentationDTO);
+    void deletePresentation(Long id);
+    void validatePresentations();
 
 
 }
