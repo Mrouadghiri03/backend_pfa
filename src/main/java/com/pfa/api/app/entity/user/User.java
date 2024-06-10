@@ -5,6 +5,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.pfa.api.app.entity.SupervisorAvailability;
+import com.pfa.api.app.entity.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,12 +16,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
+
 import com.pfa.api.app.entity.Branch;
 import com.pfa.api.app.entity.JoinRequest;
 import com.pfa.api.app.entity.Notification;
 import com.pfa.api.app.entity.Project;
 import com.pfa.api.app.entity.Team;
 import com.pfa.api.app.entity.UserStory;
+
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -126,7 +130,16 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "developer")
     @JsonManagedReference
     private List<UserStory> userStories ;
-  
+
+
+    @ManyToMany(mappedBy = "juryMembers")
+    private List<Presentation> presentations;
+
+    @OneToMany(mappedBy = "supervisor")
+    @JsonManagedReference
+    private List<SupervisorAvailability> availabilities;
+
+
     @Override
     public Collection<GrantedAuthority> getAuthorities() {
         Set<GrantedAuthority> authorities = new HashSet<>();

@@ -31,8 +31,6 @@ public class CommentController {
                 HttpStatus.OK
         );
     }
-
-
     @GetMapping
     public ResponseEntity<List<Comment>> getComments() throws ChangeSetPersister.NotFoundException {
         List<Comment> comments=commentService.getComments();
