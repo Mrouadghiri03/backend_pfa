@@ -2,6 +2,7 @@ package com.pfa.api.app.service.implementation;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.Year;
 import java.util.Calendar;
 import java.util.Date;
@@ -31,32 +32,23 @@ public class AssignmentServiceImplementation implements AssignmentService {
                 .orElseThrow(NotFoundException::new); // Return null if not found
     }
 
-    public Assignment getAssignmentByYear(String year) throws NotFoundException {
-        int targetYear;
-        try {
-            targetYear = Integer.parseInt(year);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid year format");
-        }
+    public Assignment getAssignmentByAcademicYear(String academicYear) throws NotFoundException {
 
-        List<Assignment> assignments = assignmentRepository.findAll();
-
-        Optional<Assignment> matchingAssignment = assignments.stream()
-                .filter(assignment -> {
-                    Calendar calendar = Calendar.getInstance();
-                    calendar.setTime(assignment.getDate());
-                    int assignmentYear = calendar.get(Calendar.YEAR);
-                    return assignmentYear == targetYear;
-                })
-                .findFirst();
-
-        return matchingAssignment.orElseThrow(NotFoundException::new);
+        return assignmentRepository.findByAcademicYear(academicYear).orElseThrow(NotFoundException::new);
     }
 
     @Override
     public void completeAssignment() throws NotFoundException {
-        Year currentYear = Year.now();
-        Assignment assignment = getAssignmentByYear(String.valueOf(currentYear));
+        String academicYear = "";
+        int year = LocalDate.now().getYear();
+        int month = LocalDate.now().getMonthValue();
+        
+        if (month >= 9 && month <= 12) {
+            academicYear = year + "/" + (year + 1);
+        } else if (month >= 1 && month <= 7) {
+            academicYear = (year - 1) + "/" + year;
+        }
+        Assignment assignment = getAssignmentByAcademicYear(academicYear);
         assignment.setCompleted(true);
         assignmentRepository.save(assignment);
     }

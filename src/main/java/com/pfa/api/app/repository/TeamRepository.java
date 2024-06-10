@@ -10,7 +10,7 @@ import com.pfa.api.app.entity.user.User;
 public interface TeamRepository extends JpaRepository<Team, Long> {
 
     Team findByName(String teamName);
-
+    List<Team> findByAcademicYear(String academicYear);
     List<Team> findByMembersContaining(User user);
 
 }

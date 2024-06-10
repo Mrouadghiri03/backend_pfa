@@ -33,6 +33,8 @@ public class ProjectDTO {
 
     private List<Long> supervisors;
 
+    private String team;
+
     
 
 

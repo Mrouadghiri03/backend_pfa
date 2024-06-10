@@ -24,6 +24,7 @@ import org.springframework.web.servlet.ModelAndView;
 
 import com.pfa.api.app.JsonRsponse.JsonResponse;
 import com.pfa.api.app.dto.requests.ProjectDTO;
+import com.pfa.api.app.dto.requests.TeamPreferenceDTO;
 import com.pfa.api.app.dto.responses.ProjectResponseDTO;
 import com.pfa.api.app.dto.responses.TeamPreferenceResponseDTO;
 import com.pfa.api.app.entity.user.TeamPreference;
@@ -38,7 +39,7 @@ public class ProjectController {
 
     private final ProjectService projectService;
 
-    @PreAuthorize("hasRole('ROLE_SUPERVISOR')")
+    @PreAuthorize("hasAnyRole('ROLE_SUPERVISOR','ROLE_HEAD_OF_BRANCH')")
     @PostMapping
     public ResponseEntity<JsonResponse> createNewProject(@ModelAttribute ProjectDTO projectDTO,
             @RequestParam(value = "files", required = false) List<MultipartFile> files,
@@ -59,7 +60,15 @@ public class ProjectController {
 
         return ResponseEntity.ok(projects);
     }
-    @GetMapping("/academicYear")
+
+    @GetMapping("/all")
+    public ResponseEntity<List<ProjectResponseDTO>> getProjects(
+            @RequestParam String academicYear) throws NotFoundException {
+        List<ProjectResponseDTO> projects = projectService.getAllProjects(academicYear);
+
+        return ResponseEntity.ok(projects);
+    }
+    @GetMapping("/academicYears")
     public List<String>getAcademicYear(){
         List<String> academicYears = projectService.getAllAcademicYears();
         return academicYears;
@@ -75,9 +84,9 @@ public class ProjectController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_SUPERVISOR')")
-    public ResponseEntity<JsonResponse> updateProject(@RequestBody ProjectDTO projectDTO, @PathVariable long id,
-            @RequestParam("files") List<MultipartFile> files,
-            @RequestParam("report") MultipartFile report) throws NotFoundException {
+    public ResponseEntity<JsonResponse> updateProject(@ModelAttribute ProjectDTO projectDTO, @PathVariable long id,
+            @RequestParam(value = "files", required = false) List<MultipartFile> files,
+            @RequestParam(value = "report", required = false) MultipartFile report) throws NotFoundException {
 
         projectService.updateProject(projectDTO, id ,files,report);
         return new ResponseEntity<JsonResponse>(
@@ -137,8 +146,19 @@ public class ProjectController {
     }
 
     @GetMapping("/preferences")
-    public ResponseEntity<List<TeamPreferenceResponseDTO>> getProjectPreference() throws NotFoundException {
+    public ResponseEntity<List<TeamPreferenceResponseDTO>> getAllProjectsPreferences() throws NotFoundException {
         return new ResponseEntity<>(projectService.getAllProjectsPreferencesResponse(), HttpStatus.OK);
+    }
+    @PutMapping("/preferences")
+    @PreAuthorize("hasRole('ROLE_HEAD_OF_BRANCH')")
+    public ResponseEntity<JsonResponse> updateProjectPreference(@RequestBody List<TeamPreferenceDTO> teamPreferences) throws NotFoundException {
+        projectService.updateAllProjectPreferences(teamPreferences);
+        return new ResponseEntity<>(new JsonResponse(200, "Project preferences updated successfully"), HttpStatus.OK);
+    }
+
+    @GetMapping("/preferences/team")
+    public ResponseEntity<List<TeamPreferenceResponseDTO>> getProjectPreferences(@RequestParam Long teamId) throws NotFoundException {
+        return new ResponseEntity<>(projectService.getProjectPreferencesResponse(teamId), HttpStatus.OK);
     }
 
     @PostMapping("/assign")

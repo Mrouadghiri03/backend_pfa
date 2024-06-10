@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @Getter
@@ -39,13 +40,22 @@ public class Document {
     @JsonBackReference
     private Project project;
 
+    private Date uploadDate;
+
+    private String uploader;
+
     @OneToOne(mappedBy = "report")
     @JsonBackReference
     private Project reportOf;
 
 
-    @OneToMany(mappedBy = "document" , cascade = CascadeType.ALL)              //mappedBy = "document" <=>specifies that the relationship will be managed by document field in the Comment entity/cascade = CascadeType.ALL<=>when i update a documents  ===>its associated comments will be updated
+    @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<Comment> comments;
+
+    @ManyToOne(targetEntity = Folder.class)
+    @JoinColumn(name = "folder_id")
+    @JsonBackReference
+    private Folder folder;
 
 }
