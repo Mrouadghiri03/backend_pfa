@@ -8,6 +8,8 @@ import java.util.stream.Collectors;
 import com.pfa.api.app.entity.user.Role;
 import com.pfa.api.app.entity.user.RoleName;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.stereotype.Service;
 
 import com.pfa.api.app.dto.requests.UserDTO;
@@ -16,11 +18,13 @@ import com.pfa.api.app.entity.user.User;
 import com.pfa.api.app.repository.UserRepository;
 import com.pfa.api.app.service.UserService;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class UserServiceImplementation implements UserService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
     @Override
     public UserResponseDTO getUser(Long userId) {

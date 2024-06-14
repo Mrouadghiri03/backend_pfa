@@ -95,6 +95,7 @@ public class AuthenticationService {
         } else if(request.getRole().equals(RoleName.ROLE_SUPERVISOR.name())) {
             branch = branchRepository.findById(request.getBranch()).orElseThrow(NotFoundException::new);
             branch.getProfs().add(user);
+            user.setBranch(branch);
         } else {
             branch = branchRepository.findById(request.getBranch()).orElseThrow(NotFoundException::new);
             user.setBranch(branch);

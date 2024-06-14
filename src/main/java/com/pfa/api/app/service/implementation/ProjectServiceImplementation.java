@@ -20,8 +20,13 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException.NotFound;
@@ -59,6 +64,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@EnableCaching
 public class ProjectServiceImplementation implements ProjectService {
 
     @Value("${upload.directory}")
@@ -155,15 +161,8 @@ public class ProjectServiceImplementation implements ProjectService {
         projectRepository.save(savedProject);
         folderRepository.save(documentsFolder);
         folderRepository.save(reportFolder);
-        Notification notification = Notification.builder()
-                .description("The project " + savedProject.getTitle()
-                        + " has been submitted for approval. Please review it.")
-                .creationDate(new Date())
-                .nameOfSender(owner.getFirstName() + " " + owner.getLastName())
-                .user(branch.getHeadOfBranch())
-                .type("PROJECT")
-                .build();
-        notificationRepository.save(notification);
+        notify("The project " + savedProject.getTitle() + " has been created by the supervisor " + owner.getFirstName()
+                + " " + owner.getLastName() + ". You can view it now.", List.of(branch.getHeadOfBranch()));
         // email shit for the project approval
         // emailService.sendProjectApprovalEmail(savedProject);
         return ProjectResponseDTO.fromEntity(savedProject);
@@ -247,6 +246,9 @@ public class ProjectServiceImplementation implements ProjectService {
             MultipartFile report) throws NotFoundException {
         Project project = projectRepository.findById(id).orElseThrow(NotFoundException::new);
         User currentUser = UserUtils.getCurrentUser(userRepository);
+        if (!project.getSupervisors().contains(currentUser)) {
+            throw new RuntimeException("not authorized to update this project");
+        }
         if (projectDTO.getDescription() != null) {
             project.setDescription(projectDTO.getDescription());
         }
@@ -260,13 +262,22 @@ public class ProjectServiceImplementation implements ProjectService {
             project.setCodeLink(projectDTO.getCodeLink());
         }
         if (projectDTO.getStatus() != null) {
-            project.setStatus(projectDTO.getTitle());
+            project.setStatus(projectDTO.getStatus());
         }
         if (projectDTO.getTechStack() != null) {
-            project.setTechStack(projectDTO.getTitle());
+            project.setTechStack(projectDTO.getTechStack());
         }
         if (files != null && !files.isEmpty()) {
             FileUtils.saveDocuments(files, project, DIRECTORY, documentRepository,currentUser);
+        }
+        if (!projectDTO.getSupervisors().isEmpty()) {
+            List<User> supervisors = findSupervisors(projectDTO.getSupervisors());
+            supervisors.forEach((supervisor)->{
+                if (!supervisor.getProjects().contains(project) && !project.getSupervisors().contains(supervisor)) {                    
+                    supervisor.getProjects().add(project);
+                    project.getSupervisors().add(supervisor);
+                }
+            });
         }
         if (report != null && !report.isEmpty()) {
             if (project.getReport() == null) {
@@ -279,21 +290,10 @@ public class ProjectServiceImplementation implements ProjectService {
         }
 
         Project savedProject = projectRepository.save(project);
-        for (User otherSupervisor : savedProject.getSupervisors()) {
-            if (otherSupervisor != currentUser) {
-                Notification notification = Notification.builder()
-                        .description("The project " + savedProject.getTitle() + " has been updated,by the supervisor"
-                                + currentUser.getFirstName() + " " + currentUser.getLastName() + " Please review it.")
-                        .creationDate(new Date())
-                        .nameOfSender(savedProject.getBranch().getHeadOfBranch().getFirstName() + " "
-                                + savedProject.getBranch().getHeadOfBranch().getLastName())
-                        .user(otherSupervisor)
-                        .type("PROJECT")
-                        .build();
-                notificationRepository.save(notification);
-            }
-
-        }
+        List<User> otherSupervisors = new ArrayList<>(savedProject.getSupervisors());
+        otherSupervisors.remove(currentUser);
+        notify("The project " + savedProject.getTitle() + " has been updated by the supervisor " + currentUser.getFirstName()
+                + " " + currentUser.getLastName() + ". You can view it now.", otherSupervisors);
         return ProjectResponseDTO.fromEntity(savedProject);
 
     }
@@ -370,14 +370,18 @@ public class ProjectServiceImplementation implements ProjectService {
         Project project = projectRepository.findById(id).orElseThrow(NotFoundException::new);
         project.setIsPublic(true);
         projectRepository.save(project);
-        for (User supervisor : project.getSupervisors()) {
+        notify("The project " + project.getTitle() + " has been approved by the head of the branch "
+                + project.getBranch().getName() + " . You can view it now.", project.getSupervisors());
+    }
+    
+    @Async
+    private void notify(String message, List<User> users) {
+        for (User user : users) {
             Notification notification = Notification.builder()
-                    .description("The project " + project.getTitle() + " has been approved by the head of the branch "
-                            + project.getBranch().getName() + " . Students can now view and choose it.")
+                    .description(message)
                     .creationDate(new Date())
-                    .nameOfSender(project.getBranch().getHeadOfBranch().getFirstName() + " "
-                            + project.getBranch().getHeadOfBranch().getLastName())
-                    .user(supervisor)
+                    .nameOfSender("System")
+                    .user(user)
                     .type("PROJECT")
                     .build();
 

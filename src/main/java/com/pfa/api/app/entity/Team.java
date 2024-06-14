@@ -55,4 +55,9 @@ public class Team {
 
     private String academicYear;
 
+    @OneToOne
+    @JoinColumn(name = "presentation_id")
+    @JsonBackReference
+    private Presentation presentation;
+
 }

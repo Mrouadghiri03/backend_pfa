@@ -41,7 +41,6 @@ public class AuthController {
 
     @PostMapping("/authenticate")
     public ResponseEntity<AuthenticationResponse> authenticate(@RequestBody AuthenticationDTO request)throws JwtException{
-        System.out.println(request);
         return ResponseEntity.ok(authenticationService.authenticate(request));
 
     }

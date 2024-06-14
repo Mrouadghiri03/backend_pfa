@@ -75,6 +75,7 @@ public class User implements UserDetails {
     @Column(name = "cin", unique = true)
     private String cin;
 
+    
     @Column(name = "inscription_number", unique = true)
     private String inscriptionNumber;
 
@@ -91,7 +92,7 @@ public class User implements UserDetails {
     private Boolean enabled;
 
     @ManyToOne(targetEntity = Branch.class)
-    @JoinColumn(name = "branch_id")
+    @JoinColumn(name = "studied_branch_id")
     @JsonManagedReference
     private Branch studiedBranch;
 

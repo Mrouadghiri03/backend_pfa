@@ -1,26 +1,29 @@
 package com.pfa.api.app.service.implementation;
 
-import com.pfa.api.app.dto.requests.PresentationDTO;
-import com.pfa.api.app.dto.responses.PresentationResponseDTO;
-import com.pfa.api.app.entity.Presentation;
-import com.pfa.api.app.entity.ValidPresentation;
-import com.pfa.api.app.repository.PresentationRepository;
-import com.pfa.api.app.repository.TeamRepository;
-import com.pfa.api.app.repository.UserRepository;
-import com.pfa.api.app.repository.ValidPresentationRepository;
-import com.pfa.api.app.service.EmailService;
-import com.pfa.api.app.service.PresentationService;
-
-import lombok.RequiredArgsConstructor;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import com.pfa.api.app.entity.user.User;
-
 import java.time.LocalDate;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+
+import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.stereotype.Service;
+
+import com.pfa.api.app.dto.requests.PresentationDTO;
+import com.pfa.api.app.dto.responses.PresentationResponseDTO;
+import com.pfa.api.app.entity.Notification;
+import com.pfa.api.app.entity.Presentation;
+import com.pfa.api.app.entity.Team;
+import com.pfa.api.app.entity.PresentationsPlan;
+import com.pfa.api.app.entity.user.User;
+import com.pfa.api.app.repository.NotificationRepository;
+import com.pfa.api.app.repository.PresentationRepository;
+import com.pfa.api.app.repository.TeamRepository;
+import com.pfa.api.app.repository.UserRepository;
+import com.pfa.api.app.repository.PresentationsPlanRepository;
+import com.pfa.api.app.service.EmailService;
+import com.pfa.api.app.service.PresentationService;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -30,13 +33,30 @@ public class PresentationServiceImplementation implements PresentationService {
     private final TeamRepository teamRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
-    private final ValidPresentationRepository validPresentationRepository;
+    private final PresentationsPlanRepository PresentationsPlanRepository;
+    private final NotificationRepository notificationRepository;
 
     @Override
     public PresentationResponseDTO addPresentation(PresentationDTO presentationDTO) {
         Presentation presentation = mapToEntity(presentationDTO);
         presentation = presentationRepository.save(presentation);
+        Team team = presentation.getTeam();
+        team.setPresentation(presentation);
+        teamRepository.save(team);
+
+        String nameOfSender = team.getMembers().get(0).getStudiedBranch().getHeadOfBranch().getFirstName() + " "
+                + team.getMembers().get(0).getStudiedBranch().getHeadOfBranch().getLastName();
         for (User jury : presentation.getJuryMembers()) {
+            Notification notification = Notification.builder()
+                    .user(jury)
+                    .creationDate(new Date())
+                    .type("PROJECT")
+                    .description("You have been assigned as a jury member for a presentation on " 
+                + presentation.getStartTime() + " in room " + presentation.getRoomNumber() + " you can now check it and contact the head of branch to change it,check more infos in the calendar.\n")
+                        .nameOfSender(nameOfSender)
+                    .build();
+
+            notificationRepository.save(notification);
             emailService.sendInformingEmail(jury,"You have been assigned as a jury member for a presentation on " 
                 + presentation.getStartTime() + " in room " + presentation.getRoomNumber() + " you can now check it and contact the head of branch to change it,check more infos in the app.\n");
         }
@@ -86,12 +106,30 @@ public class PresentationServiceImplementation implements PresentationService {
             presentation.setRoomNumber(presentationDTO.getRoomNumber());
         }
         presentation = presentationRepository.save(presentation);
+        Team team = presentation.getTeam();
+        String nameOfSender = team.getMembers().get(0).getStudiedBranch().getHeadOfBranch().getFirstName() + " "
+                + team.getMembers().get(0).getStudiedBranch().getHeadOfBranch().getLastName();
+        
+        for (User jury : presentation.getJuryMembers()) {
+            Notification notification = Notification.builder()
+                    .user(jury)
+                    .creationDate(new Date())
+                    .type("PROJECT")
+                    .description("You have been assigned as a jury member for a presentation on " 
+                + presentation.getStartTime() + " in room " + presentation.getRoomNumber() + " you can now check it and contact the head of branch to change it,check more infos in the calendar.\n")
+                        .nameOfSender(nameOfSender)
+                    .build();
+
+            notificationRepository.save(notification);
+            emailService.sendInformingEmail(jury,"You have been assigned as a jury member for a presentation on " 
+                + presentation.getStartTime() + " in room " + presentation.getRoomNumber() + " you can now check it and contact the head of branch to change it,check more infos in the app.\n");
+        }
         return PresentationResponseDTO.fromEntity(presentation);
     }
 
 
     @Override
-    public void validatePresentations() {
+    public void validatePresentationsPlan() {
         String academicYear = "";
             LocalDate currentDate = LocalDate.now();
             int year = currentDate.getYear();
@@ -102,24 +140,46 @@ public class PresentationServiceImplementation implements PresentationService {
             } else if (month >= 1 && month <= 7) {
                 academicYear = (year - 1) + "/" + year;
             }
-
-        ValidPresentation validPresentation = ValidPresentation.builder()
-                .academicYear(academicYear)
-                .completed(true)
-                .build();
-        validPresentationRepository.save(validPresentation);
+            
+        PresentationsPlan presentationsPlan = PresentationsPlanRepository.findByAcademicYear(academicYear).orElseThrow();
+        presentationsPlan.setCompleted(true);
+        PresentationsPlanRepository.save(presentationsPlan);
         List<Presentation> presentations = presentationRepository.findAll();
         for (Presentation presentation : presentations) {
+            Team team = presentation.getTeam();
+            String nameOfSender = team.getMembers().get(0).getStudiedBranch().getHeadOfBranch().getFirstName() + " "
+                    + team.getMembers().get(0).getStudiedBranch().getHeadOfBranch().getLastName();
             for (User member : presentation.getTeam().getMembers()) {
+                Notification notification = Notification.builder()
+                        .user(member)
+                        .creationDate(new Date())
+                        .type("TEAM")
+                        .nameOfSender(member.getStudiedBranch().getHeadOfBranch().getFirstName() + " "
+                                + member.getStudiedBranch().getHeadOfBranch().getLastName())
+                        .description("The presentation has been planned successfully for your team on "
+                                + presentation.getStartTime() + " in room " + presentation.getRoomNumber()
+                                + " ,check more infos in the calendar.\n" + "Good luck!")
+                        .build();
+                notificationRepository.save(notification);
                 emailService.sendInformingEmail(member,
                         "The presentation has been planned successfully for your team on "
                                 + presentation.getStartTime() + " in room " + presentation.getRoomNumber()
                                 + " ,check more infos in the app.\n" + "Good luck!");
             }
             for (User jury : presentation.getJuryMembers()) {
+                Notification notification = Notification.builder()
+                        .user(jury)
+                        .creationDate(new Date())
+                        .type("PROJECT")
+                        .description("You have been assigned as a jury member for a presentation on "
+                                + presentation.getStartTime() + " in room " + presentation.getRoomNumber()
+                                + " ,check more infos in the calendar.\n")
+                        .nameOfSender(nameOfSender)
+                        .build();
+                notificationRepository.save(notification);
                 emailService.sendInformingEmail(jury, "You have been assigned as a jury member for a presentation on "
-                        + presentation.getStartTime() + " in room " + presentation.getRoomNumber()
-                        + ",check more infos in the app.\n");
+          
+                           + ",check more infos in the app.\n");
             }
         }
     }
@@ -127,9 +187,38 @@ public class PresentationServiceImplementation implements PresentationService {
 
 	@Override
 	public void deletePresentation(Long id) {
+        Presentation presentation = presentationRepository.findById(id).orElseThrow();
+        Team team = presentation.getTeam();
+        team.setPresentation(null);
         presentationRepository.deleteById(id);
         
 	}
+
+
+    @Override
+    public void addPresentationsPlan() {
+        String academicYear = "";
+        LocalDate currentDate = LocalDate.now();
+        int year = currentDate.getYear();
+        int month = currentDate.getMonthValue();
+
+        if (month >= 9 && month <= 12) {
+            academicYear = year + "/" + (year + 1);
+        } else if (month >= 1 && month <= 7) {
+            academicYear = (year - 1) + "/" + year;
+        }
+        PresentationsPlan presentationsPlan = PresentationsPlan.builder()
+                .academicYear(academicYear)
+                .completed(false)
+                .build();
+        PresentationsPlanRepository.save(presentationsPlan);
+    }
+
+
+    @Override
+    public PresentationsPlan getPresentationsPlan(String academicYear) {
+        return PresentationsPlanRepository.findByAcademicYear(academicYear).orElseGet(null);
+    }
 
 
 
