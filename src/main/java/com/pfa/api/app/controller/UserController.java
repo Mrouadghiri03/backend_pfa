@@ -2,8 +2,10 @@ package com.pfa.api.app.controller;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.pfa.api.app.dto.requests.UserDTO;
 import com.pfa.api.app.dto.responses.UserResponseDTO;
@@ -18,6 +20,21 @@ import lombok.RequiredArgsConstructor;
 public class UserController {
 
     private final UserService userService;
+
+    @PostMapping("/{userId}/uploadProfileImage")
+    public ResponseEntity<UserResponseDTO> uploadProfileImage(@PathVariable Long userId,
+            @RequestParam("image") MultipartFile imageFile) {
+        try {
+            System.out.println("Received image file: " + imageFile.getOriginalFilename());
+            UserResponseDTO updatedUser = userService.uploadProfileImage(userId, imageFile);
+            System.out.println("Profile image uploaded successfully for user ID: " + userId);
+            return ResponseEntity.ok(updatedUser);
+        } catch (Exception e) {
+            System.err.println("Error uploading profile image for user ID: " + userId);
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<UserResponseDTO> getUser(@PathVariable Long id) {
@@ -35,13 +52,14 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long userId, @RequestBody UserDTO userDTO) {
-        User updatedUser = userService.updateUser(userId, userDTO);
-        if (updatedUser != null) {
+    @PutMapping("/{userId}")
+    public ResponseEntity<UserResponseDTO> updateUser(@PathVariable Long userId, @RequestBody UserDTO userDto) {
+        try {
+            UserResponseDTO updatedUser = userService.updateUser(userId, userDto);
             return ResponseEntity.ok(updatedUser);
-        } else {
-            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 
@@ -50,7 +68,5 @@ public class UserController {
         List<UserResponseDTO> supervisors = userService.getSupervisors();
         return ResponseEntity.ok(supervisors);
     }
-
-
 
 }

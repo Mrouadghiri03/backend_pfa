@@ -1,19 +1,33 @@
 package com.pfa.api.app.service.implementation;
 
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import org.springframework.beans.factory.annotation.Value;
 
 import com.pfa.api.app.entity.user.Role;
 import com.pfa.api.app.entity.user.RoleName;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.pfa.api.app.dto.requests.UserDTO;
 import com.pfa.api.app.dto.responses.UserResponseDTO;
 import com.pfa.api.app.entity.user.User;
 import com.pfa.api.app.repository.UserRepository;
+import com.pfa.api.app.security.JwtService;
 import com.pfa.api.app.service.UserService;
 
 @Service
@@ -21,10 +35,51 @@ public class UserServiceImplementation implements UserService {
 
     @Autowired
     private UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    @Autowired
+    private JwtService jwtService;
+
+    @Autowired
+    public UserServiceImplementation(BCryptPasswordEncoder passwordEncoder) {
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @Value("${upload.directory.photos}")
+    private String photosDirectory;
+
+    @Override
+    public UserResponseDTO uploadProfileImage(Long userId, MultipartFile imageFile) throws IOException {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!imageFile.isEmpty()) {
+            // Utilisez le chemin absolu du système de fichiers
+            Path directory = Paths.get(photosDirectory).toAbsolutePath().normalize();
+            if (!Files.exists(directory)) {
+                Files.createDirectories(directory);
+            }
+
+            Path path = directory.resolve(imageFile.getOriginalFilename());
+
+            try {
+                Files.copy(imageFile.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+            } catch (FileAlreadyExistsException e) {
+                Files.copy(imageFile.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            // Stockez le chemin relatif correctement
+            String relativePath = "/uploads/user_photos/" + imageFile.getOriginalFilename();
+            user.setProfileImage(relativePath);
+            userRepository.save(user);
+
+            System.out.println("Profile image saved to: " + path);
+        }
+
+        return UserResponseDTO.fromEntity(user);
+    }
 
     @Override
     public UserResponseDTO getUser(Long userId) {
-        User user =  userRepository.findById(userId).orElse(null);
+        User user = userRepository.findById(userId).orElse(null);
         return UserResponseDTO.fromEntity(user);
     }
 
@@ -40,8 +95,42 @@ public class UserServiceImplementation implements UserService {
     }
 
     @Override
-    public User updateUser(Long userId, UserDTO userDTO) {
-        return null;
+    public UserResponseDTO updateUser(Long userId, UserDTO userDTO) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (userDTO.getFirstName() != null && !userDTO.getFirstName().isEmpty() &&
+                !userDTO.getFirstName().equals(user.getFirstName())) {
+            user.setFirstName(userDTO.getFirstName());
+        }
+        if (userDTO.getLastName() != null && !userDTO.getLastName().isEmpty() &&
+                !userDTO.getLastName().equals(user.getLastName())) {
+            user.setLastName(userDTO.getLastName());
+        }
+        if (userDTO.getEmail() != null && !userDTO.getEmail().isEmpty() &&
+                !userDTO.getEmail().equals(user.getEmail())) {
+            user.setEmail(userDTO.getEmail());
+        }
+        if (userDTO.getPassword() != null && !userDTO.getPassword().isEmpty()) {
+            String encodedPassword = passwordEncoder.encode(userDTO.getPassword());
+            if (!encodedPassword.equals(user.getPassword())) {
+                user.setPassword(encodedPassword);
+            }
+        }
+        if (userDTO.getInscriptionNumber() != null && !userDTO.getInscriptionNumber().isEmpty() &&
+                !userDTO.getInscriptionNumber().equals(user.getInscriptionNumber())) {
+            user.setInscriptionNumber(userDTO.getInscriptionNumber());
+        }
+
+        user = userRepository.save(user);
+
+        // Générer un nouveau token avec les nouvelles informations de l'utilisateur
+        String newToken = jwtService.generateToken(new org.springframework.security.core.userdetails.User(
+                user.getEmail(), user.getPassword(), new ArrayList<>()));
+
+        UserResponseDTO responseDTO = UserResponseDTO.fromEntity(user);
+        responseDTO.setToken(newToken);
+
+        return responseDTO;
     }
 
     @Override
