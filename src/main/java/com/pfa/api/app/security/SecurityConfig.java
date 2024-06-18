@@ -17,32 +17,33 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
-    
+
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
 
     private static final String[] WHITE_LIST = {
-        "/api/auth/*",
-        "/api/projects/accept*",
-        "/swagger-ui.html",
-        "/swagger-ui/*",
-        "/v3/api-docs/*",
-        "/v3/api-docs.yaml",
+            "/api/auth/*",
+            "/api/projects/accept*",
+            "/swagger-ui.html",
+            "/swagger-ui/*",
+            "/v3/api-docs/*",
+            "/v3/api-docs.yaml",
+            "/uploads/user_photos/*",
     };
+
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf().disable()
-            .authorizeHttpRequests()
-            .requestMatchers(WHITE_LIST).permitAll()
-            .anyRequest().authenticated()
-            .and()
-            .sessionManagement()
-            .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            .and()
-            .authenticationProvider(authenticationProvider)
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-            
+                .csrf().disable()
+                .authorizeHttpRequests()
+                .requestMatchers(WHITE_LIST).permitAll()
+                .anyRequest().authenticated()
+                .and()
+                .sessionManagement()
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
+                .authenticationProvider(authenticationProvider)
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

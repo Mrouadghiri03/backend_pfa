@@ -24,6 +24,7 @@ import com.pfa.api.app.entity.Document;
 import com.pfa.api.app.entity.Project;
 import com.pfa.api.app.entity.user.User;
 import com.pfa.api.app.repository.DocumentRepository;
+import com.pfa.api.app.repository.UserRepository;
 
 import lombok.experimental.UtilityClass;
 
@@ -92,6 +93,64 @@ public class FileUtils {
             return documentRepository.saveAll(documents);
         } catch (IOException e) {
             throw new RuntimeException("Failed to store files", e);
+        }
+    }
+
+    public void saveUserImage(MultipartFile image, User user, String DIRECTORY,UserRepository userRepository) {
+        try {
+            Path userDirectory = createUserDirectory(DIRECTORY, user.getId());
+            String fileName = FileUtils.generateUniqueFileName(image.getOriginalFilename());
+            byte[] compressedFile = FileUtils.compressFile(image.getBytes());
+            Path fileStorage = userDirectory.resolve(fileName + ".gz");
+            Files.write(fileStorage, compressedFile);
+
+            user.setProfileImage(fileName);
+            userRepository.save(user);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to store files", e);
+        }
+    }
+    public Path createUserDirectory(String DIRECTORY, Long userId) throws IOException {
+        Path directory = Paths.get(DIRECTORY + "/" + userId + "/").toAbsolutePath().normalize();
+        if (!Files.exists(directory)) {
+            Files.createDirectories(directory);
+        }
+        return directory;
+    }
+
+    public ResponseEntity<byte[]> downloadUserImage(User user, String DIRECTORY) {
+        try {
+            Path userDirectory = createUserDirectory(DIRECTORY, user.getId());
+            Path fileStorage = userDirectory.resolve(user.getProfileImage() + ".gz");
+            System.out.println(fileStorage.toString());
+            byte[] compressedFile = Files.readAllBytes(fileStorage);
+            byte[] decompressedFile = FileUtils.decompressFile(compressedFile);
+            String fileType = FileUtils.determineContentType(decompressedFile);
+            System.out.println(fileType);
+            HttpHeaders headers = new HttpHeaders();
+
+            headers.setContentType(getMediaType(fileType));
+            headers.setContentDispositionFormData("attachment", user.getProfileImage());
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(decompressedFile);
+
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to download file", e);
+        }
+    }
+    
+    private MediaType getMediaType(String fileExtension) {
+        // Map file extensions to MIME types
+        switch (fileExtension) {
+            case "image/jpeg":
+                return MediaType.IMAGE_JPEG;
+            case "image/png":
+                return MediaType.IMAGE_PNG;
+            // Add other image types as needed
+            default:
+                return null;
         }
     }
     @SuppressWarnings("null")

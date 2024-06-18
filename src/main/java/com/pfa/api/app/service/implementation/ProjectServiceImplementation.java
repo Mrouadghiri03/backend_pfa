@@ -584,7 +584,7 @@ public class ProjectServiceImplementation implements ProjectService {
     public ResponseEntity<byte[]> downloadFile(Long projectId, Long docId) {
         Project project = projectRepository.findById(projectId).get();
         Document document = documentRepository.findById(docId).get();
-        return FileUtils.downloadFile(project, document, DIRECTORY);
+        return FileUtils.downloadFile(project,   document, DIRECTORY);
     }
 
     @Override

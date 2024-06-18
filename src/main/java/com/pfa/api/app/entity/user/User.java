@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.pfa.api.app.entity.SupervisorAvailability;
 import com.pfa.api.app.entity.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -16,14 +15,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
-
-import com.pfa.api.app.entity.Branch;
-import com.pfa.api.app.entity.JoinRequest;
-import com.pfa.api.app.entity.Notification;
-import com.pfa.api.app.entity.Project;
-import com.pfa.api.app.entity.Team;
-import com.pfa.api.app.entity.UserStory;
-
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -122,16 +113,14 @@ public class User implements UserDetails {
     @OneToOne(targetEntity = JoinRequest.class)
     @JoinColumn(name = "join_request_id", nullable = true)
     private JoinRequest joinRequest;
-  
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonBackReference
     private List<Notification> notifications;
 
-
     @OneToMany(mappedBy = "developer")
     @JsonManagedReference
-    private List<UserStory> userStories ;
-
+    private List<UserStory> userStories;
 
     @ManyToMany(mappedBy = "juryMembers")
     private List<Presentation> presentations;
@@ -140,6 +129,8 @@ public class User implements UserDetails {
     @JsonManagedReference
     private List<SupervisorAvailability> availabilities;
 
+    @Column(name = "profile_image")
+    private String profileImage;
 
     @Override
     public Collection<GrantedAuthority> getAuthorities() {

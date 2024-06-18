@@ -27,6 +27,8 @@ public class UserStoryResponseDTO {
     private List<Long> tags;
     private UserResponseDTO developer;
     private String developerName;
+    private String developerImageProfile;
+    private String developerId;
     private Long sprintId;
     private Long backlogId;
 
@@ -37,6 +39,8 @@ public class UserStoryResponseDTO {
             .name(userStory.getName())
             .description(userStory.getDescription())
             .status(userStory.getStatus())
+            .developerId(userStory.getDeveloper()==null ? null : ""+userStory.getDeveloper().getId())
+            .developerImageProfile(userStory.getDeveloper()==null ? null : userStory.getDeveloper().getProfileImage())
             .tags(new ArrayList<>(List.of(userStory.getPriority(), userStory.getStoryPoints())))
             .priority(userStory.getPriority())
             .storyPoints(userStory.getStoryPoints())
