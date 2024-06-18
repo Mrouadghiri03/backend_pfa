@@ -1,23 +1,18 @@
 package com.pfa.api.app.service.implementation;
 
+import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.io.File;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import org.springframework.beans.factory.annotation.Value;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
-import com.pfa.api.app.entity.user.Role;
-import com.pfa.api.app.entity.user.RoleName;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,10 +20,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.pfa.api.app.dto.requests.UserDTO;
 import com.pfa.api.app.dto.responses.UserResponseDTO;
+import com.pfa.api.app.entity.user.RoleName;
 import com.pfa.api.app.entity.user.User;
 import com.pfa.api.app.repository.UserRepository;
 import com.pfa.api.app.security.JwtService;
 import com.pfa.api.app.service.UserService;
+import com.pfa.api.app.util.FileUtils;
 
 @Service
 public class UserServiceImplementation implements UserService {
@@ -45,33 +42,14 @@ public class UserServiceImplementation implements UserService {
     }
 
     @Value("${upload.directory.photos}")
-    private String photosDirectory;
+    private String USER_IMAGES_DIRECTORY;
 
     @Override
     public UserResponseDTO uploadProfileImage(Long userId, MultipartFile imageFile) throws IOException {
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!imageFile.isEmpty()) {
-            // Utilisez le chemin absolu du système de fichiers
-            Path directory = Paths.get(photosDirectory).toAbsolutePath().normalize();
-            if (!Files.exists(directory)) {
-                Files.createDirectories(directory);
-            }
-
-            Path path = directory.resolve(imageFile.getOriginalFilename());
-
-            try {
-                Files.copy(imageFile.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
-            } catch (FileAlreadyExistsException e) {
-                Files.copy(imageFile.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
-            }
-
-            // Stockez le chemin relatif correctement
-            String relativePath = "/uploads/user_photos/" + imageFile.getOriginalFilename();
-            user.setProfileImage(relativePath);
-            userRepository.save(user);
-
-            System.out.println("Profile image saved to: " + path);
+            FileUtils.saveUserImage(imageFile,user,USER_IMAGES_DIRECTORY,userRepository);
         }
 
         return UserResponseDTO.fromEntity(user);
@@ -143,6 +121,12 @@ public class UserServiceImplementation implements UserService {
     public List<UserResponseDTO> getSupervisors() {
         List<User> supervisors = userRepository.findByRoleName(RoleName.ROLE_SUPERVISOR.name());
         return supervisors.stream().map(UserResponseDTO::fromEntity).collect(Collectors.toList());
+    }
+
+    @Override
+    public ResponseEntity<byte[]> downloadProfileImage(Long userId) throws IOException {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        return FileUtils.downloadUserImage(user, USER_IMAGES_DIRECTORY);
     }
 
 }

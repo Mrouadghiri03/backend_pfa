@@ -36,6 +36,17 @@ public class UserController {
         }
     }
 
+    @GetMapping("/{userId}/downloadProfileImage")
+    public ResponseEntity<byte[]> downloadProfileImage(@PathVariable Long userId) {
+        try {
+            ResponseEntity<byte[]> image = userService.downloadProfileImage(userId);
+            return image;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<UserResponseDTO> getUser(@PathVariable Long id) {
         UserResponseDTO user = userService.getUser(id);
