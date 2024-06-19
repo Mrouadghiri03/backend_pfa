@@ -17,18 +17,18 @@ import java.util.Date;
 @NoArgsConstructor
 public class AssignmentResponseDTO {
     private Long id;
-    private Date date;
     private Boolean initiated;
     private Boolean completed;
     private Long branchId;
+    private String academicYear;
 
     // You can include other fields or associations as needed
 
     public static AssignmentResponseDTO fromEntity(Assignment assignment) {
         return AssignmentResponseDTO.builder()
                 .id(assignment.getId())
-                .date(assignment.getDate())
                 .initiated(assignment.getInitiated())
+                .academicYear(assignment.getAcademicYear())
                 .completed(assignment.getCompleted())
                 .branchId(assignment.getBranch() != null ? assignment.getBranch().getId() : null)
                 .build();

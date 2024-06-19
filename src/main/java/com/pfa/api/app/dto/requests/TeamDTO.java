@@ -12,5 +12,6 @@ public class TeamDTO {
     private String name;
     private List<Long> membersIds;
     private Long newResponsible;
+    private String academicYear;
 
 }

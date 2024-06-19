@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.zip.GZIPInputStream;
@@ -14,11 +15,14 @@ import java.util.zip.GZIPOutputStream;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.tika.Tika;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.pfa.api.app.entity.Document;
 import com.pfa.api.app.entity.Project;
+import com.pfa.api.app.entity.user.User;
 import com.pfa.api.app.repository.DocumentRepository;
 
 import lombok.experimental.UtilityClass;
@@ -67,7 +71,7 @@ public class FileUtils {
         return directory;
     }
 
-    public  void saveDocuments(List<MultipartFile> files, Project project , String DIRECTORY ,DocumentRepository documentRepository) {
+    public  List<Document> saveDocuments(List<MultipartFile> files, Project project , String DIRECTORY ,DocumentRepository documentRepository ,User owner) {
         try {
             Path projectDirectory = createProjectDirectory(DIRECTORY,project.getId());
             List<Document> documents = new ArrayList<>();
@@ -78,17 +82,19 @@ public class FileUtils {
                 Files.write(fileStorage, compressedFile);
                 documents.add(Document.builder()
                         .docName(fileName)
+                        .uploadDate(new Date())
+                        .uploader(owner.getFirstName() + " " + owner.getLastName())
                         .fileSize(compressedFile.length)
                         .project(project)
                         .build());
             }
-            documentRepository.saveAll(documents);
+            return documentRepository.saveAll(documents);
         } catch (IOException e) {
             throw new RuntimeException("Failed to store files", e);
         }
     }
     @SuppressWarnings("null")
-    public  void saveReport(MultipartFile report, Project project , String DIRECTORY ,DocumentRepository documentRepository) {
+    public  Document saveReport(MultipartFile report, Project project , String DIRECTORY ,DocumentRepository documentRepository,User owner) {
         try {
             Path projectDirectory = createProjectDirectory(DIRECTORY,project.getId());
                 String fileName = FileUtils.generateUniqueFileName(report.getOriginalFilename());
@@ -97,26 +103,37 @@ public class FileUtils {
                 Files.write(fileStorage, compressedFile);
                 Document document = Document.builder()
                         .docName(fileName)
+                        .uploadDate(new Date())
+                        .uploader(owner.getFirstName() + " " + owner.getLastName())
                         .fileSize(compressedFile.length)
                         .reportOf(project)
                         .build();
-            documentRepository.save(document);
-            project.setReport(document);
+                Document doc = documentRepository.save(document);
+                project.setReport(doc);
+                return doc;
+
 
         } catch (IOException e) {
             throw new RuntimeException("Failed to store files", e);
         }
     }
 
-    public static ResponseEntity<byte[]> downloadFile(Project project, Document document, String dIRECTORY) {
+    public static ResponseEntity<byte[]> downloadFile(Project project, Document document, String DIRECTORY) {
         try {
-            Path projectDirectory = createProjectDirectory(dIRECTORY,project.getId());
+            Path projectDirectory = createProjectDirectory(DIRECTORY, project.getId());
             Path fileStorage = projectDirectory.resolve(document.getDocName() + ".gz");
+
             byte[] compressedFile = Files.readAllBytes(fileStorage);
             byte[] decompressedFile = FileUtils.decompressFile(compressedFile);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", document.getDocName());
+
             return ResponseEntity.ok()
-                    .header("Content-Disposition", "attachment; filename=" + document.getDocName())
+                    .headers(headers)
                     .body(decompressedFile);
+
         } catch (IOException e) {
             throw new RuntimeException("Failed to download file", e);
         }

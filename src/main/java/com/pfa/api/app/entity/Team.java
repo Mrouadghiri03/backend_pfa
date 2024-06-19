@@ -53,4 +53,6 @@ public class Team {
     @JsonIgnore
     private Project project;
 
+    private String academicYear;
+
 }

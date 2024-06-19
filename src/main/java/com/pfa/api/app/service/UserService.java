@@ -14,4 +14,7 @@ public interface UserService {
     List<User> getUsersByBranch(Long branch);
 
     User updateUser(Long userId, UserDTO userDTO);
+
+    List<UserResponseDTO> getSupervisors();
+
 }

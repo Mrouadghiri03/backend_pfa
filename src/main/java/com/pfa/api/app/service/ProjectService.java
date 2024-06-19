@@ -10,6 +10,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.pfa.api.app.dto.requests.ProjectDTO;
+import com.pfa.api.app.dto.requests.TeamPreferenceDTO;
 import com.pfa.api.app.dto.responses.ProjectResponseDTO;
 import com.pfa.api.app.dto.responses.TeamPreferenceResponseDTO;
 import com.pfa.api.app.entity.Project;
@@ -26,6 +27,8 @@ public interface ProjectService {
     ProjectResponseDTO getProject(Long id) throws NotFoundException;
 
     List<ProjectResponseDTO> getAllProjects(int pageNumber,int pageSize , String academicYear) throws NotFoundException;
+    List<ProjectResponseDTO> getAllProjects(String academicYear) throws NotFoundException;
+
     List<String> getAllAcademicYears();
 
 
@@ -33,6 +36,8 @@ public interface ProjectService {
             List<MultipartFile> files,MultipartFile report) throws NotFoundException;
 
     ProjectResponseDTO deleteFile(Long id, Long docId) throws NotFoundException, IOException;
+
+    ProjectResponseDTO deleteReport(Long id,Long reportId) throws NotFoundException;
 
     void validateToken(String approvalToken);
 
@@ -45,12 +50,15 @@ public interface ProjectService {
     List<TeamPreference> getAllProjectsPreferences();
 
     List<TeamPreferenceResponseDTO> getAllProjectsPreferencesResponse();
+    List<TeamPreferenceResponseDTO> getProjectPreferencesResponse(Long teamId);
 
     Map<User,Project> assignUsersToProjects() throws NotFoundException;
 
     void validateAssignments() throws NotFoundException;
 
     ResponseEntity<byte[]> downloadFile(Long projectId, Long docId);
+
+    void updateAllProjectPreferences(List<TeamPreferenceDTO> teamPreferences) throws NotFoundException;
 
     
 

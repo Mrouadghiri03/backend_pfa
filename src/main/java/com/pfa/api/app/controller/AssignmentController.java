@@ -33,8 +33,8 @@ public class AssignmentController {
     }
 
     @GetMapping
-    public ResponseEntity<AssignmentResponseDTO> getAssignmentByYear(@RequestParam String year) throws NotFoundException {
-        Assignment assignment = assignmentService.getAssignmentByYear(year);
+    public ResponseEntity<AssignmentResponseDTO> getAssignmentByYear(@RequestParam String academicYear) throws NotFoundException {
+        Assignment assignment = assignmentService.getAssignmentByAcademicYear(academicYear);
         return ResponseEntity.ok(AssignmentResponseDTO.fromEntity(assignment));
     }
 }

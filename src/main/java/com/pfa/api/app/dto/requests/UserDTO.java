@@ -1,5 +1,6 @@
 package com.pfa.api.app.dto.requests;
 
+import com.pfa.api.app.entity.user.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,4 +24,6 @@ public class UserDTO {
     private String inscriptionNumber;
 
     private String password;
+
+
 }

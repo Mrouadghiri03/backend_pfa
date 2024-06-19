@@ -1,49 +1,50 @@
 package com.pfa.api.app.entity;
 
-import java.util.Date;
+import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
-import jakarta.persistence.Column;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-@Getter
-@Setter
 @Entity
+@Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "assignment")
-public class Assignment {
-
+@Table
+public class Folder {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", length = 45)
     private Long id;
 
-    private String academicYear;
-    
-    @Column(name = "initiated")
-    private Boolean initiated;
 
-    @Column(name = "completed")
-    private Boolean completed;
+    private String name;
 
-    @ManyToOne(targetEntity = Branch.class)
+    private String type;
+
+    @ManyToOne(targetEntity = Project.class)
+    @JoinColumn(name="project_id")
+    @JsonBackReference
+    private Project project; 
+
+    @OneToMany(mappedBy = "folder",cascade = CascadeType.ALL,fetch = FetchType.EAGER)
     @JsonManagedReference
-    @JoinColumn(name = "branch_id")
-    private Branch branch;
+    private List<Document> documents;
 
-    
+
 }

@@ -1,6 +1,7 @@
 package com.pfa.api.app.controller;
 import com.pfa.api.app.JsonRsponse.JsonResponse;
 import com.pfa.api.app.dto.requests.CommentDTO;
+import com.pfa.api.app.dto.responses.CommentResponseDTO;
 import com.pfa.api.app.entity.Comment;
 import com.pfa.api.app.entity.Document;
 import com.pfa.api.app.service.CommentService;
@@ -22,18 +23,14 @@ public class CommentController {
 
 
     @PostMapping
-    public ResponseEntity<JsonResponse> addNewComment(@RequestBody CommentDTO commentDTO) throws ChangeSetPersister.NotFoundException {
+    public ResponseEntity<CommentResponseDTO> addNewComment(@RequestBody CommentDTO commentDTO) throws ChangeSetPersister.NotFoundException {
         Comment comment=commentService.addComment(commentDTO);
-        return new ResponseEntity<JsonResponse>(
-                new JsonResponse(
-                200,
-                "comment added successfully")
+        return new ResponseEntity<CommentResponseDTO>(
+                CommentResponseDTO.fromEntity(comment)
                 ,
                 HttpStatus.OK
         );
     }
-
-
     @GetMapping
     public ResponseEntity<List<Comment>> getComments() throws ChangeSetPersister.NotFoundException {
         List<Comment> comments=commentService.getComments();

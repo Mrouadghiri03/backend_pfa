@@ -41,7 +41,7 @@ public class Project {
     @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false)
+    @Column(nullable = false,columnDefinition = "TEXT")
     private String description;
 
     @Column(nullable = false)
@@ -86,14 +86,18 @@ public class Project {
          
 
 
-    @OneToOne
-    @JoinColumn(name = "backlog_id")
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "backlog_id" )
     @JsonManagedReference
      private Backlog backlog; 
      
-     @OneToMany(mappedBy = "project")
+     @OneToMany(mappedBy = "project" , cascade = CascadeType.ALL)
      @JsonManagedReference
      private List<Sprint> sprints;
+
+    @OneToMany(mappedBy = "project" , cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private List<Folder> folders;
     
   
     
