@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 
 @SpringBootApplication
-@EnableCaching
 @OpenAPIDefinition(info = @Info(title = "JWT apis",version = "1.0"))
 public class PfaApplication {
 
