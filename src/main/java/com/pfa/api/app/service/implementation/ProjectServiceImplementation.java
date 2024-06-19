@@ -28,6 +28,7 @@ import com.pfa.api.app.dto.requests.ProjectDTO;
 import com.pfa.api.app.dto.responses.ProjectResponseDTO;
 import com.pfa.api.app.dto.responses.TeamPreferenceResponseDTO;
 import com.pfa.api.app.entity.Assignment;
+import com.pfa.api.app.entity.Backlog;
 import com.pfa.api.app.entity.Branch;
 import com.pfa.api.app.entity.Document;
 import com.pfa.api.app.entity.Project;
@@ -35,6 +36,7 @@ import com.pfa.api.app.entity.Team;
 import com.pfa.api.app.entity.user.TeamPreference;
 import com.pfa.api.app.entity.user.User;
 import com.pfa.api.app.repository.AssignmentRepository;
+import com.pfa.api.app.repository.BacklogRepository;
 import com.pfa.api.app.repository.BranchRepository;
 import com.pfa.api.app.repository.DocumentRepository;
 import com.pfa.api.app.repository.ProjectPreferenceRepository;
@@ -65,11 +67,13 @@ public class ProjectServiceImplementation implements ProjectService {
     private final AssignmentRepository assignmentRepository;
     private final TeamRepository teamRepository;
     private final AssignmentService assignmentService;
-
+    private final BacklogRepository backlogRepository;
     @SuppressWarnings("null")
     @Override
     public ProjectResponseDTO addProject(ProjectDTO projectDTO, List<MultipartFile> files, MultipartFile report)
             throws NotFoundException, AccessDeniedException {
+                Backlog backlog = new Backlog();
+                Backlog savedBacklog = backlogRepository.save(backlog);
         User owner = UserUtils.getCurrentUser(userRepository);
         Branch branch = branchRepository.findById(projectDTO.getBranch()).get();
         List<User> supervisors = new ArrayList<>();
@@ -87,6 +91,7 @@ public class ProjectServiceImplementation implements ProjectService {
                 .branch(branch)
                 .approvalToken(UUID.randomUUID().toString())
                 .isPublic(true)// false when i activate the email validation stuff
+                .backlog(savedBacklog)
                 .build();
 
         Project savedProject = projectRepository.save(project);

@@ -25,5 +25,7 @@ public class SprintDTO {
     private boolean closed;
 
     private Long projectId;
+
+    private String  description;
     
 }

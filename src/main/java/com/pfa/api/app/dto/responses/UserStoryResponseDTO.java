@@ -38,7 +38,7 @@ public class UserStoryResponseDTO {
                 .storyPoints(userStory.getStoryPoints())
                 .developer(userStory.getDeveloper()==null ? null : UserResponseDTO.fromEntity(userStory.getDeveloper()))
                 .sprintId(userStory.getSprint()==null ? null : userStory.getSprint().getId())
-                .backlogId(userStory.getBacklog().getId())
+                .backlogId(userStory.getBacklog()==null?null:userStory.getBacklog().getId())
                 .build();
     }
     

@@ -31,8 +31,8 @@ public class SprintServiceImplementation implements SprintService{
                 .name(sprintDTO.getName())
                 .start_date(sprintDTO.getStart_date())
                 .end_date(sprintDTO.getEnd_date())
-                .velocity(sprintDTO.getVelocity())
-                
+                .velocity(null)
+                .description(sprintDTO.getDescription())
                 .project(project)
                 .build();
                 sprintRepository.save(sprint);
@@ -49,6 +49,9 @@ public class SprintServiceImplementation implements SprintService{
                  if (sprintDTO.getVelocity()!=null) {
                     sprint.setVelocity(sprintDTO.getVelocity());
                  }
+                 if (sprintDTO.getDescription()!=null) {
+                  sprint.setDescription(sprintDTO.getDescription());
+               }
                  if (sprintDTO.getEnd_date()!=null) {
                     sprint.setEnd_date(sprintDTO.getEnd_date());
                  }
@@ -102,5 +105,14 @@ public class SprintServiceImplementation implements SprintService{
              .map(SprintResponse::fromEntity)
              .collect(Collectors.toList());
     }
+
+   @Override
+   public SprintResponse closeSprint(Long id) {
+      Sprint sprint = sprintRepository.findById(id).orElseThrow (() -> new RuntimeException("Sprint not found"));
+      sprint.setClosed(true);
+      sprintRepository.save(sprint);
+      return SprintResponse.fromEntity(sprint);
+
+   }
     
 }

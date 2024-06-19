@@ -34,6 +34,7 @@ public class ProjectResponseDTO {
     private List<Long> supervisorIds;
     private List<DocumentResponseDTO> documentIds;
     private Long teamId;
+    private Long backlog;
 
     // You can include other fields or associations as needed
 
@@ -57,6 +58,7 @@ public class ProjectResponseDTO {
                 ? project.getDocuments().stream().map(DocumentResponseDTO::fromEntity).collect(Collectors.toList())
                 : null)
                 .teamId(project.getTeam() != null ? project.getTeam().getId() : null)
+                .backlog(project.getBacklog().getId())
                 .build();
 
         }

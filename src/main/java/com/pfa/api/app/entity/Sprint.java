@@ -3,9 +3,12 @@ package com.pfa.api.app.entity;
 import java.util.Date;
 import java.util.List;
 
+import org.hibernate.annotations.Cascade;
+
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -34,8 +37,9 @@ public class Sprint {
     
     @Column(nullable = false)
         private String name;
-
     @Column(nullable = false)
+      private String description;
+   
     private Long velocity;
 
     @Column(nullable = false)
@@ -46,8 +50,9 @@ public class Sprint {
     
     private boolean closed;
     
-    @OneToMany(mappedBy = "sprint")
+    @OneToMany(mappedBy = "sprint",cascade = CascadeType.ALL)
     @JsonManagedReference
+    
     private List <UserStory> userStories;
 
 
