@@ -10,6 +10,7 @@ public interface SprintService {
     SprintResponse AddSprint(SprintDTO sprintDTO);
 
     SprintResponse updateSprint(SprintDTO sprintDTO , Long id);
+    SprintResponse closeSprint( Long id);
 
     SprintResponse getSprint(Long id);
 

@@ -49,7 +49,7 @@ public class UserStoryImplementation implements UserStoryService {
                                .description(userStoryDTO.getDescription())
                                .priority(userStoryDTO.getPriority())
                                .storyPoints(userStoryDTO.getStoryPoints())
-                               .status(userStoryDTO.getStatus())
+                               .status("To Do")
                                .backlog(backlog)
                                .build();
 
@@ -121,11 +121,15 @@ public class UserStoryImplementation implements UserStoryService {
   
     @Override
     public UserStoryResponseDTO  AffectDevelopToUserStory(Long id,Long developId){
-    
+      
         UserStory userStory  = userStoryRepository.findById(id).orElseThrow (() -> new RuntimeException("userStory not found"));
-        User develop = userRepository.findById(developId).orElseThrow (() -> new RuntimeException("Develop not found"));
-         
-        userStory.setDeveloper(develop);
+        
+        if (developId==0) {
+        userStory.setDeveloper(null);
+        }else{
+            User develop = userRepository.findById(developId).orElseThrow (() -> new RuntimeException("Develop not found"));
+            userStory.setDeveloper(develop);}
+        
         userStoryRepository.save(userStory);
         
   return UserStoryResponseDTO.fromEntity(userStory);
@@ -141,6 +145,19 @@ public class UserStoryImplementation implements UserStoryService {
         
   return UserStoryResponseDTO.fromEntity(userStory);
    }
+
+@Override
+public UserStoryResponseDTO removedUserStoryFromSprint(Long id) {
+    
+    UserStory userStory = userStoryRepository.findById(id).orElseThrow (() -> new RuntimeException("userStory not found"));
+
+    userStory.setSprint(null);
+    
+
+  userStoryRepository.save(userStory);  
+   
+return UserStoryResponseDTO.fromEntity(userStory);
+}
     
 }
 

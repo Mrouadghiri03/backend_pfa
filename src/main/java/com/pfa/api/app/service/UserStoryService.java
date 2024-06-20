@@ -18,6 +18,7 @@ public interface UserStoryService {
 
 
     UserStoryResponseDTO deleteUserStory(Long id);
+    UserStoryResponseDTO removedUserStoryFromSprint(Long id);
 
     UserStoryResponseDTO AffectDevelopToUserStory(Long id,Long developId);
 

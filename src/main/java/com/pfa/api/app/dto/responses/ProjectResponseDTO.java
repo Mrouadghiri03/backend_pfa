@@ -33,7 +33,7 @@ public class ProjectResponseDTO {
     private List<Long> supervisorIds;
     private List<DocumentResponseDTO> documents;
     private Long teamId;
-    private Long backlogId ;
+    private Long backlog;
 
     // You can include other fields or associations as needed
 
@@ -48,7 +48,7 @@ public class ProjectResponseDTO {
                 .codeLink(project.getCodeLink())
                 .isPublic(project.getIsPublic())
                 .folders(project.getFolders() != null ? project.getFolders().stream().map(FolderResponseDTO::fromEntity).collect(Collectors.toList()) : null)
-                .backlogId(project.getBacklog() != null ? project.getBacklog().getId() : null)
+                .backlog(project.getBacklog() != null ? project.getBacklog().getId() : null)
                 .branchId(project.getBranch() != null ? project.getBranch().getId() : null)
                 .approvalToken(project.getApprovalToken())
                 .report(project.getFolders() != null ? project.getFolders().stream().filter(folder -> folder.getType().equals("REPORT")).map(Folder::getDocuments).flatMap(List::stream).map(DocumentResponseDTO::fromEntity).findFirst().orElse(null) : null)
@@ -59,6 +59,7 @@ public class ProjectResponseDTO {
                 ? project.getFolders().stream().filter(folder -> folder.getType().equals("DOCUMENTS")).map(Folder::getDocuments).flatMap(List::stream).map(DocumentResponseDTO::fromEntity).collect(Collectors.toList())
                 : null)
                 .teamId(project.getTeam() != null ? project.getTeam().getId() : null)
+                .backlog(project.getBacklog().getId())
                 .build();
 
         }

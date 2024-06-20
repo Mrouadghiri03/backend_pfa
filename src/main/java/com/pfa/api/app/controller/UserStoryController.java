@@ -72,7 +72,12 @@ public class UserStoryController {
         UserStoryResponseDTO userStoryResponseDTO = userStoryService.AffectSprintToUserStory(id, sprintId);
         return new ResponseEntity<JsonResponse>(new JsonResponse(200, "Sprint has been affected to UserStory"), HttpStatus.ACCEPTED);
     }
+    @PutMapping("/{id}/removed-from-sprint")
+    public ResponseEntity<JsonResponse> deleteUserStoryFromSprint(@PathVariable Long id )throws NotFoundException {
+        UserStoryResponseDTO userStoryResponseDTO = userStoryService.removedUserStoryFromSprint(id);
     
+        return new ResponseEntity<JsonResponse>(new JsonResponse(200, "UserStory has been removed"), HttpStatus.ACCEPTED);
+    }
     
     
 }

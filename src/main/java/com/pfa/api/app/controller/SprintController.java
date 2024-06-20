@@ -5,7 +5,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.pfa.api.app.JsonRsponse.JsonResponse;
 import com.pfa.api.app.dto.requests.SprintDTO;
 import com.pfa.api.app.dto.responses.SprintResponse;
+import com.pfa.api.app.dto.responses.UserStoryResponseDTO;
 import com.pfa.api.app.service.SprintService;
+import com.pfa.api.app.service.UserStoryService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -31,6 +33,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 @RequiredArgsConstructor
 public class SprintController {
     private final SprintService sprintService;
+ 
 
     @PostMapping
     @PreAuthorize("hasRole('ROLE_RESPONSIBLE')")
@@ -61,9 +64,17 @@ public class SprintController {
 
         return new ResponseEntity<JsonResponse>(new JsonResponse(202, "Sprint has been updated."), HttpStatus.ACCEPTED);
     }
+     @PutMapping("/{id}/closed")
+    public ResponseEntity<JsonResponse> EndSprint(@PathVariable Long id)
+            throws NotFoundException {
+        SprintResponse Response = sprintService.closeSprint( id);
+
+        return new ResponseEntity<JsonResponse>(new JsonResponse(202, "Sprint has been Closed."), HttpStatus.ACCEPTED);
+    }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<JsonResponse> deleteSprintById(@PathVariable Long id) throws NotFoundException {
+        
         SprintResponse sprintResponse = sprintService.deleteSprint(id);
 
         return new ResponseEntity<JsonResponse>(new JsonResponse(200, "Sprint has been Deleted"), HttpStatus.ACCEPTED);

@@ -26,7 +26,7 @@ public class SprintResponse {
     private Date endDate;
     private Long velocity;
     private boolean closed;
-
+    private String  description;
     private Long projectID;
 
     private List<UserStoryResponseDTO> userStories;
@@ -47,7 +47,8 @@ public class SprintResponse {
                 .velocity(sprint.getVelocity())
                 .closed(sprint.isClosed())
                 .projectID(sprint.getProject() == null ? null : sprint.getProject().getId())
-                .userStories(fromEntity(sprint.getUserStories()))
+                .userStories(sprint.getUserStories() == null?null: fromEntity(sprint.getUserStories()))
+                .description(sprint.getDescription())
                 .build();
     }
 
