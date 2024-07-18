@@ -15,7 +15,7 @@ public class NotificationResponseDTO {
     private String description;
     private Date creationDate;
     private Long userId;
-    private String nameOfSender;
+    private Long idOfSender;
     private String type;
 
     public static NotificationResponseDTO fromEntity(Notification notification) {
@@ -24,7 +24,7 @@ public class NotificationResponseDTO {
                 .description(notification.getDescription())
                 .creationDate(notification.getCreationDate())
                 .userId(notification.getUser().getId())
-                .nameOfSender(notification.getNameOfSender())
+                .idOfSender(notification.getIdOfSender())
                 .type(notification.getType())
                 .build();
     }

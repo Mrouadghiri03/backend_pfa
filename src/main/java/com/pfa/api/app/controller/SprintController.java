@@ -36,7 +36,7 @@ public class SprintController {
  
 
     @PostMapping
-    @PreAuthorize("hasRole('ROLE_RESPONSIBLE')")
+    @PreAuthorize("hasRole('ROLE_STUDENT')")
     public ResponseEntity<JsonResponse> CreateSprint(@RequestBody SprintDTO entity) throws NotFoundException {
         SprintResponse Response = sprintService.AddSprint(entity);
 
@@ -58,6 +58,7 @@ public class SprintController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ROLE_STUDENT')")
     public ResponseEntity<JsonResponse> adjustSprint(@PathVariable Long id, @RequestBody SprintDTO sprintDTO)
             throws NotFoundException {
         SprintResponse Response = sprintService.updateSprint(sprintDTO, id);
@@ -65,14 +66,24 @@ public class SprintController {
         return new ResponseEntity<JsonResponse>(new JsonResponse(202, "Sprint has been updated."), HttpStatus.ACCEPTED);
     }
      @PutMapping("/{id}/closed")
+    @PreAuthorize("hasRole('ROLE_STUDENT')")
     public ResponseEntity<JsonResponse> EndSprint(@PathVariable Long id)
             throws NotFoundException {
         SprintResponse Response = sprintService.closeSprint( id);
 
         return new ResponseEntity<JsonResponse>(new JsonResponse(202, "Sprint has been Closed."), HttpStatus.ACCEPTED);
     }
+    @PutMapping("/{id}/started")
+    @PreAuthorize("hasRole('ROLE_STUDENT')")
+    public ResponseEntity<JsonResponse> StartSprint(@PathVariable Long id)
+            throws NotFoundException {
+        SprintResponse Response = sprintService.startSprint( id);
+
+        return new ResponseEntity<JsonResponse>(new JsonResponse(202, "Sprint has been Started."), HttpStatus.ACCEPTED);
+    }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ROLE_STUDENT')")
     public ResponseEntity<JsonResponse> deleteSprintById(@PathVariable Long id) throws NotFoundException {
         
         SprintResponse sprintResponse = sprintService.deleteSprint(id);

@@ -59,7 +59,6 @@ public class EmailServiceImplementation implements EmailService{
             Context context = new Context();
             context.setVariable("headOfBranchName", headOfBranch.getFirstName());
             context.setVariable("userName", newUser.getFirstName()+" "+newUser.getLastName());
-            context.setVariable("phoneNumber", newUser.getPhoneNumber());
             context.setVariable("email", newUser.getEmail());
             context.setVariable("branch", newUser.getStudiedBranch().getName());
             context.setVariable("cin", newUser.getCin());
@@ -157,6 +156,28 @@ public class EmailServiceImplementation implements EmailService{
         } catch (Exception e) {
             System.out.println("message : " + e.getMessage());
             System.out.println("cause : " + e.getCause());
+        }
+    }
+
+    @Override
+    @Async
+    public void sendForgotPasswordEmail(User user) {
+        try {
+            MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+
+            helper.setTo(user.getEmail());
+            helper.setSubject("Forgot Password");
+
+            Context context = new Context();
+            context.setVariable("name", user.getFirstName());
+            context.setVariable("code", user.getResetCode());
+
+            String htmlContent = templateEngine.process("email/emailForgotPasswordTemplate", context);
+            helper.setText(htmlContent, true);
+            javaMailSender.send(mimeMessage);
+        } catch (Exception e) {
+            System.out.println("message : " + e.getMessage());
         }
     }
 

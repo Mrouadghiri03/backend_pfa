@@ -49,7 +49,7 @@ public class UserStoryImplementation implements UserStoryService {
                                .description(userStoryDTO.getDescription())
                                .priority(userStoryDTO.getPriority())
                                .storyPoints(userStoryDTO.getStoryPoints())
-                               .status("To Do")
+                               .status("ToDo")
                                .backlog(backlog)
                                .build();
 

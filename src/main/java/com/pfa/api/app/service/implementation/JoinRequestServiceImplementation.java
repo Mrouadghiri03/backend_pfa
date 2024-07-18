@@ -50,7 +50,7 @@ public class JoinRequestServiceImplementation implements JoinRequestService{
     }
     public void rejectJoinRequest(Long id) throws NotFoundException {
         JoinRequest joinRequest = getJoinRequestById(id);
-        joinRequest.getUser().setJoinRequest(null);
+        userRepository.delete(joinRequest.getUser());
         joinRequestRepository.delete(joinRequest);
     }
     

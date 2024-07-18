@@ -25,7 +25,7 @@ public class Notification {
 
     private String description;
     private Date creationDate;
-    private String nameOfSender;
+    private Long idOfSender;
     private String type;
 
     @ManyToOne

@@ -25,7 +25,6 @@ public class UserResponseDTO {
         private String firstName;
         private String lastName;
         private String email;
-        private String phoneNumber;
         private String cin;
         private String inscriptionNumber;
         private Boolean enabled;
@@ -46,7 +45,6 @@ public class UserResponseDTO {
                                 .firstName(user.getFirstName())
                                 .lastName(user.getLastName())
                                 .email(user.getEmail())
-                                .phoneNumber(user.getPhoneNumber())
                                 .cin(user.getCin())
                                 .inscriptionNumber(user.getInscriptionNumber())
                                 .enabled(user.getEnabled())

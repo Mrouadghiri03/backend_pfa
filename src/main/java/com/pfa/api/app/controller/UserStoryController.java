@@ -34,7 +34,7 @@ public class UserStoryController {
     
 
     @PostMapping
-    @PreAuthorize("hasRole('ROLE_RESPONSIBLE')")
+    @PreAuthorize("hasRole('ROLE_STUDENT')")
     public ResponseEntity<JsonResponse> CreateUserStory(@RequestBody UserStoryDTO userStoryDTO)throws NotFoundException {
         UserStoryResponseDTO userStoryResponseDTO = userStoryService.addUserStory(userStoryDTO);
        return new ResponseEntity<JsonResponse>(new JsonResponse(201, "UserStory created successfully"), HttpStatus.CREATED) ;
@@ -48,6 +48,7 @@ public class UserStoryController {
         return ResponseEntity.ok(userStoryResponseDTO);
     }
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ROLE_STUDENT')")
     public ResponseEntity<JsonResponse> updateUserStory(@PathVariable Long id, @RequestBody UserStoryDTO userStoryDTO)throws NotFoundException {
           UserStoryResponseDTO userStoryResponseDTO = userStoryService.updateUserStory(userStoryDTO, id);
         
@@ -55,6 +56,7 @@ public class UserStoryController {
     }
 
    @DeleteMapping("/{id}")
+   @PreAuthorize("hasRole('ROLE_STUDENT')")
     public ResponseEntity<JsonResponse> deleteUserStory(@PathVariable Long id )throws NotFoundException {
         UserStoryResponseDTO userStoryResponseDTO = userStoryService.deleteUserStory(id);
     
@@ -62,17 +64,20 @@ public class UserStoryController {
     }
 
     @PostMapping("/{id}/affect-developer")
+    @PreAuthorize("hasRole('ROLE_STUDENT')")
     public ResponseEntity<JsonResponse> AffectDevelopToUserStory(@PathVariable Long id, @RequestParam Long developId)throws NotFoundException {
         UserStoryResponseDTO userStoryResponseDTO = userStoryService.AffectDevelopToUserStory(id, developId);
         return new ResponseEntity<JsonResponse>(new JsonResponse(200, "Developer has been affected to UserStory"), HttpStatus.ACCEPTED);
     }
 
     @PostMapping("/{id}/affect-sprint")
+    @PreAuthorize("hasRole('ROLE_STUDENT')")
     public ResponseEntity<JsonResponse> AffectSprintToUserStory(@PathVariable Long id, @RequestParam Long sprintId)throws NotFoundException {
         UserStoryResponseDTO userStoryResponseDTO = userStoryService.AffectSprintToUserStory(id, sprintId);
         return new ResponseEntity<JsonResponse>(new JsonResponse(200, "Sprint has been affected to UserStory"), HttpStatus.ACCEPTED);
     }
     @PutMapping("/{id}/removed-from-sprint")
+    @PreAuthorize("hasRole('ROLE_STUDENT')")
     public ResponseEntity<JsonResponse> deleteUserStoryFromSprint(@PathVariable Long id )throws NotFoundException {
         UserStoryResponseDTO userStoryResponseDTO = userStoryService.removedUserStoryFromSprint(id);
     

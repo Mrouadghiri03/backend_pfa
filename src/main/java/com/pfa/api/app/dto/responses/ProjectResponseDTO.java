@@ -59,7 +59,6 @@ public class ProjectResponseDTO {
                 ? project.getFolders().stream().filter(folder -> folder.getType().equals("DOCUMENTS")).map(Folder::getDocuments).flatMap(List::stream).map(DocumentResponseDTO::fromEntity).collect(Collectors.toList())
                 : null)
                 .teamId(project.getTeam() != null ? project.getTeam().getId() : null)
-                .backlog(project.getBacklog().getId())
                 .build();
 
         }

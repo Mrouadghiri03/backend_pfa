@@ -26,7 +26,6 @@ public class BacklogController {
     private final BacklogService backlogService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ROLE_RESPONSIBLE')")
     public ResponseEntity<JsonResponse> CreateBacklog() throws NotFoundException {
         Backlog backlog = new Backlog();
         backlogService.AddBacklog(backlog);

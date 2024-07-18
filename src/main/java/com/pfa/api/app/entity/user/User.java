@@ -60,9 +60,6 @@ public class User implements UserDetails {
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    @Column(name = "phone_number")
-    private String phoneNumber;
-
     @Column(name = "cin", unique = true)
     private String cin;
 
@@ -81,6 +78,8 @@ public class User implements UserDetails {
 
     @Column(name = "enabled")
     private Boolean enabled;
+
+    private String resetCode;
 
     @ManyToOne(targetEntity = Branch.class)
     @JoinColumn(name = "studied_branch_id")

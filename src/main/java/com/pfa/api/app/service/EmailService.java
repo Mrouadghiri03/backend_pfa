@@ -9,4 +9,5 @@ public interface EmailService {
     void sendNotificationEmailToHeadOfBranch(User headOfBranchName , User to,String token);
     void sendProjectApprovalEmail(Project project);
     void sendInformingEmail(User to, String message);
+    void sendForgotPasswordEmail(User user);
 }

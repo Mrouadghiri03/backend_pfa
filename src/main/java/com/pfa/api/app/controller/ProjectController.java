@@ -46,7 +46,7 @@ public class ProjectController {
             @RequestParam(value = "report", required = false) MultipartFile report)
             throws AccessDeniedException, NotFoundException {
 
-        ProjectResponseDTO project = projectService.addProject(projectDTO, files, report);
+        projectService.addProject(projectDTO, files, report);
         return new ResponseEntity<JsonResponse>(
                 new JsonResponse(201, "Project has been created successfully!"), HttpStatus.CREATED);
     }

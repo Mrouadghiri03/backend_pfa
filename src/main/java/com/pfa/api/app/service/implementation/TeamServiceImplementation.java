@@ -3,6 +3,7 @@ package com.pfa.api.app.service.implementation;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.EnableCaching;
@@ -40,6 +41,10 @@ public class TeamServiceImplementation implements TeamService {
         if (currentUser.getTeam() != null) {
             throw new RuntimeException("you're already in a team");
         }
+        if (teamRepository.findByName(teamDTO.getName()).isPresent()) {
+            throw new RuntimeException("team with this name already exists");
+            
+        }
         // Associer les rôles à l'utilisateur
 
         // Enregistrer l'utilisateur dans la base de données
@@ -64,7 +69,14 @@ public class TeamServiceImplementation implements TeamService {
         Team persistedTeam = teamRepository.save(team);
         if (!currentUser.getRoles().stream().map(Role::getName)
                 .anyMatch(name -> name.equals(RoleName.ROLE_RESPONSIBLE.toString()))) {
-            currentUser.getRoles().add(roleRepository.findByName(RoleName.ROLE_RESPONSIBLE.toString()).get());
+            Optional<Role> optionalRole = roleRepository.findByName(RoleName.ROLE_RESPONSIBLE.toString());
+            if (optionalRole.isPresent()) {
+                currentUser.getRoles().add(optionalRole.get());
+            }else{
+                Role role= roleRepository.save(Role.builder().name(RoleName.ROLE_RESPONSIBLE.toString()).build());
+                currentUser.getRoles().add(role);
+
+            }
         }
         currentUser.setTeam(persistedTeam);
         userRepository.save(currentUser);
@@ -84,7 +96,7 @@ public class TeamServiceImplementation implements TeamService {
                                 " has added you as a member of team " + persistedTeam.getName() +
                                 ". Review and contact him please.")
                         .creationDate(new Date())
-                        .nameOfSender(currentUser.getFirstName() + " " + currentUser.getLastName())
+                        .idOfSender(currentUser.getId())
                         .user(member)
                         .type("team")
                         .build();
@@ -106,7 +118,7 @@ public class TeamServiceImplementation implements TeamService {
 
     @Override
     public void deleteTeamByName(String teamName) {
-        Team team = teamRepository.findByName(teamName);
+        Team team = teamRepository.findByName(teamName).get();
         if (team != null) {
             teamRepository.delete(team);
         }
@@ -186,7 +198,7 @@ public class TeamServiceImplementation implements TeamService {
 
     @Override
     public TeamResponseDTO getTeamByName(String teamName) {
-        Team team = teamRepository.findByName(teamName);
+        Team team = teamRepository.findByName(teamName).get();
         return TeamResponseDTO.fromEntity(team);
     }
 
@@ -197,7 +209,7 @@ public class TeamServiceImplementation implements TeamService {
         System.out.println(academicYear.getClass());
         if (academicYear.equals("undefined")) {
             teams = teamRepository.findAll();
-        }else{
+        } else {
             teams = teamRepository.findByAcademicYear(academicYear);
         }
         List<TeamResponseDTO> teamResponseDTOs = new ArrayList<>();

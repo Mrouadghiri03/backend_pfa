@@ -20,6 +20,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
@@ -81,8 +82,12 @@ public class ProjectServiceImplementation implements ProjectService {
 
     @SuppressWarnings("null")
     @Override
-    public ProjectResponseDTO addProject(ProjectDTO projectDTO, List<MultipartFile> files, MultipartFile report)
+    public void addProject(ProjectDTO projectDTO, List<MultipartFile> files, MultipartFile report)
             throws NotFoundException, AccessDeniedException {
+                if (projectRepository.findByTitle(projectDTO.getTitle()).isPresent()) {
+                    throw new RuntimeException("Project with the same title already exists");
+                    
+                }
                 Backlog backlog = new Backlog();
                 Backlog savedBacklog = backlogRepository.save(backlog);
         User owner = UserUtils.getCurrentUser(userRepository);
@@ -99,7 +104,7 @@ public class ProjectServiceImplementation implements ProjectService {
                 .status(projectDTO.getStatus())
                 .branch(branch)
                 .approvalToken(UUID.randomUUID().toString())
-                .isPublic(true)// false when i activate the email validation stuff
+                .isPublic(false)// false when i activate the email validation stuff
                 .backlog(savedBacklog)
                 .build();
  
@@ -124,6 +129,9 @@ public class ProjectServiceImplementation implements ProjectService {
             .type("DOCUMENTS")
             .project(savedProject)
             .build();
+        Folder savedReportFolder = folderRepository.save(reportFolder);
+        Folder savedDocumentsFolder = folderRepository.save(documentsFolder);
+            savedProject.setFolders(Arrays.asList(savedDocumentsFolder, savedReportFolder));
         if (!projectDTO.getTeam().equals("null")) {
             team.setProject(savedProject);
             teamRepository.save(team);
@@ -136,11 +144,8 @@ public class ProjectServiceImplementation implements ProjectService {
         }
 
         if (files != null && !files.isEmpty()) {
-            // Save the documents folder first
-            documentsFolder = folderRepository.save(documentsFolder);
-            
             // Save the documents and set the folder
-            List<Document> docs = FileUtils.saveDocuments(files, savedProject, DIRECTORY, documentRepository,owner);
+            List<Document> docs = FileUtils.saveDocuments(files,savedProject, savedDocumentsFolder, DIRECTORY, documentRepository,owner);
             for (Document doc : docs) {
                 doc.setFolder(documentsFolder);
             }
@@ -148,24 +153,20 @@ public class ProjectServiceImplementation implements ProjectService {
         }
 
         if (report != null && !report.isEmpty()) {
-            // Save the report folder first
-            reportFolder = folderRepository.save(reportFolder);
-
             // Save the report document and set the folder
-            Document doc = FileUtils.saveReport(report, savedProject, DIRECTORY, documentRepository,owner);
+            Document doc = FileUtils.saveReport(report,savedProject, savedReportFolder, DIRECTORY, documentRepository,owner);
             doc.setFolder(reportFolder);
             doc = documentRepository.save(doc);
 
         }
 
-        projectRepository.save(savedProject);
-        folderRepository.save(documentsFolder);
-        folderRepository.save(reportFolder);
+        // projectRepository.save(savedProject);
+        // folderRepository.save(documentsFolder);
+        // folderRepository.save(reportFolder);
         notify("The project " + savedProject.getTitle() + " has been created by the supervisor " + owner.getFirstName()
                 + " " + owner.getLastName() + ". You can view it now.", List.of(branch.getHeadOfBranch()));
         // email shit for the project approval
         // emailService.sendProjectApprovalEmail(savedProject);
-        return ProjectResponseDTO.fromEntity(savedProject);
     }
 
     @SuppressWarnings("null")
@@ -181,13 +182,7 @@ public class ProjectServiceImplementation implements ProjectService {
         }
 
         Project project = projectOptional.get();
-        String[] years = project.getAcademicYear().split("/");
-        int currentYear = Year.now().getValue();
-        boolean isCurrentYearPresent = Arrays.asList(years).contains(String.valueOf(currentYear));
 
-        if (!isCurrentYearPresent) {
-            throw new NotFoundException();
-        }
 
         if (isHeadOfBranch || (isSupervisor && project.getSupervisors().contains(currentUser))
                 || project.getIsPublic()) {
@@ -267,9 +262,6 @@ public class ProjectServiceImplementation implements ProjectService {
         if (projectDTO.getTechStack() != null) {
             project.setTechStack(projectDTO.getTechStack());
         }
-        if (files != null && !files.isEmpty()) {
-            FileUtils.saveDocuments(files, project, DIRECTORY, documentRepository,currentUser);
-        }
         if (!projectDTO.getSupervisors().isEmpty()) {
             List<User> supervisors = findSupervisors(projectDTO.getSupervisors());
             supervisors.forEach((supervisor)->{
@@ -278,15 +270,6 @@ public class ProjectServiceImplementation implements ProjectService {
                     project.getSupervisors().add(supervisor);
                 }
             });
-        }
-        if (report != null && !report.isEmpty()) {
-            if (project.getReport() == null) {
-                FileUtils.saveReport(report, project, DIRECTORY, documentRepository , currentUser);
-
-            } else {
-                deleteReport(id, project.getReport().getId());
-                FileUtils.saveReport(report, project, DIRECTORY, documentRepository, currentUser);
-            }
         }
 
         Project savedProject = projectRepository.save(project);
@@ -380,7 +363,7 @@ public class ProjectServiceImplementation implements ProjectService {
             Notification notification = Notification.builder()
                     .description(message)
                     .creationDate(new Date())
-                    .nameOfSender("System")
+                    .idOfSender(0L)
                     .user(user)
                     .type("PROJECT")
                     .build();
@@ -399,8 +382,7 @@ public class ProjectServiceImplementation implements ProjectService {
                     .description("The project " + project.getTitle() + " has been rejected by the head of the branch "
                             + project.getBranch().getName() + " . Please contact him for more details.")
                     .creationDate(new Date())
-                    .nameOfSender(project.getBranch().getHeadOfBranch().getFirstName() + " "
-                            + project.getBranch().getHeadOfBranch().getLastName())
+                    .idOfSender(project.getBranch().getHeadOfBranch().getId())
                     .user(supervisor)
                     .type("PROJECT")
                     .build();
@@ -431,7 +413,7 @@ public class ProjectServiceImplementation implements ProjectService {
                     .description("The user " + user.getFirstName() + " " + user.getLastName()
                             + " has submitted your team's project preferences. You can see it.")
                     .creationDate(new Date())
-                    .nameOfSender(user.getFirstName() + " " + user.getLastName())
+                    .idOfSender(user.getId())
                     .user(member)
                     .type("PROJECT")
                     .build();
@@ -484,7 +466,7 @@ public class ProjectServiceImplementation implements ProjectService {
     @Override
     public Map<User, Project> assignUsersToProjects() throws NotFoundException {
         Map<User, Project> result = ProjectUtils.assignTeamsToProjects(getAllProjectsPreferences(), userRepository,
-                projectPreferenceRepository, projectRepository);
+                projectPreferenceRepository, projectRepository,notificationRepository);
 
         String academicYear = "";
         int year = LocalDate.now().getYear();
@@ -510,7 +492,7 @@ public class ProjectServiceImplementation implements ProjectService {
     public void validateAssignments() throws NotFoundException {
         List<TeamPreference> allPreferences = getAllProjectsPreferences();
         Map<User, Project> assignedProjects = ProjectUtils.assignTeamsToProjects(getAllProjectsPreferences(),
-                userRepository, projectPreferenceRepository, projectRepository);
+                userRepository, projectPreferenceRepository, projectRepository,notificationRepository);
         List<Project> projects = new ArrayList<>();
         List<User> responsibleUsers = new ArrayList<>();
         List<Team> teams = new ArrayList<>();
@@ -541,8 +523,7 @@ public class ProjectServiceImplementation implements ProjectService {
                         .description("The project " + project.getTitle()
                                 + " has been assigned to your team. You can view it and start working on it.")
                         .creationDate(new Date())
-                        .nameOfSender(project.getBranch().getHeadOfBranch().getFirstName() + " "
-                                + project.getBranch().getHeadOfBranch().getLastName())
+                        .idOfSender(project.getBranch().getHeadOfBranch().getId())
                         .user(member)
                         .type("TEAM")
                         .build();
@@ -563,8 +544,7 @@ public class ProjectServiceImplementation implements ProjectService {
                         .description("The project " + project.getTitle() + " has been assigned to the team "
                                 + user.getTeam().getName() + ". You can view it and start working on it.")
                         .creationDate(new Date())
-                        .nameOfSender(project.getBranch().getHeadOfBranch().getFirstName() + " "
-                                + project.getBranch().getHeadOfBranch().getLastName())
+                        .idOfSender(project.getBranch().getHeadOfBranch().getId())
                         .user(supervisor)
                         .type("PROJECT")
                         .build();

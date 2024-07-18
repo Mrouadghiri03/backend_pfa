@@ -24,8 +24,8 @@ public class SprintResponse {
     private String name;
     private Date starDate;
     private Date endDate;
-    private Long velocity;
     private boolean closed;
+    private boolean started;
     private String  description;
     private Long projectID;
 
@@ -44,8 +44,8 @@ public class SprintResponse {
                 .name(sprint.getName())
                 .starDate(sprint.getStart_date())
                 .endDate(sprint.getEnd_date())
-                .velocity(sprint.getVelocity())
                 .closed(sprint.isClosed())
+                .started(sprint.isStarted())
                 .projectID(sprint.getProject() == null ? null : sprint.getProject().getId())
                 .userStories(sprint.getUserStories() == null?null: fromEntity(sprint.getUserStories()))
                 .description(sprint.getDescription())

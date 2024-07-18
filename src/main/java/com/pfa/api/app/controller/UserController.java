@@ -79,5 +79,10 @@ public class UserController {
         List<UserResponseDTO> supervisors = userService.getSupervisors();
         return ResponseEntity.ok(supervisors);
     }
+    @GetMapping("/students")
+    public ResponseEntity<List<UserResponseDTO>> getStudents() {
+        List<UserResponseDTO> supervisors = userService.getStudents();
+        return ResponseEntity.ok(supervisors);
+    }
 
 }

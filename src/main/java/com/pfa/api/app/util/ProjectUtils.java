@@ -1,26 +1,34 @@
 package com.pfa.api.app.util;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
 import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
 
 import com.pfa.api.app.entity.Assignment;
+import com.pfa.api.app.entity.Notification;
 import com.pfa.api.app.entity.Project;
 import com.pfa.api.app.entity.user.TeamPreference;
 import com.pfa.api.app.entity.user.User;
+import com.pfa.api.app.repository.NotificationRepository;
 import com.pfa.api.app.repository.ProjectPreferenceRepository;
 import com.pfa.api.app.repository.ProjectRepository;
 import com.pfa.api.app.repository.UserRepository;
 
+
 public class ProjectUtils {
+
+
     @SuppressWarnings("null")
     public static Map<User, Project> assignTeamsToProjects(List<TeamPreference> projectsPreferences 
         ,UserRepository userRepository ,ProjectPreferenceRepository projectPreferenceRepository
-        ,ProjectRepository projectRepository) throws NotFoundException {
+        ,ProjectRepository projectRepository,NotificationRepository notificationRepository) throws NotFoundException {
         for (TeamPreference teamPreference : projectsPreferences) {
             System.out.println("Team ID: " + teamPreference.getId());
             System.out.println("User ID: " + teamPreference.getUser().getId());
@@ -86,10 +94,27 @@ public class ProjectUtils {
             Project project = projectRepository.findById(projectId).orElseThrow(NotFoundException::new);
 
             resultMap.put(user, project);
+            notify( "The head of branch has assigned teams to project , including yours , please check your assignment result page"
+                , project.getSupervisors(), notificationRepository);
         }
 
         return resultMap;
 
+    }
+    @Async
+    private static void notify(String message, List<User> users,NotificationRepository notificationRepository) {
+        for (User user : users) {
+            Notification notification = Notification.builder()
+                    .description(message)
+                    .creationDate(new Date())
+                    .idOfSender(0L)
+                    .user(user)
+                    .type("PROJECT")
+                    .build();
+
+            // Save the notification in the database
+            notificationRepository.save(notification);
+        }
     }
 
     public static void printPreferences(List<TeamPreference> holderProjectsPreferences){

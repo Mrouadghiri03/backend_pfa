@@ -22,7 +22,7 @@ import com.pfa.api.app.entity.user.User;
 public interface ProjectService {
 
 
-    ProjectResponseDTO addProject(ProjectDTO projectDTO, List<MultipartFile> files ,MultipartFile report) throws AccessDeniedException, NotFoundException;
+    void addProject(ProjectDTO projectDTO, List<MultipartFile> files ,MultipartFile report) throws AccessDeniedException, NotFoundException;
 
     ProjectResponseDTO getProject(Long id) throws NotFoundException;
 

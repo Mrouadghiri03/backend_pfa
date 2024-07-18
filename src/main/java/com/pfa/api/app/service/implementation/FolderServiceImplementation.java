@@ -106,7 +106,7 @@ public class FolderServiceImplementation implements FolderService {
         );
         User user = UserUtils.getCurrentUser(userRepository);
         // upload files
-        List<Document> documents = FileUtils.saveDocuments(files, folder.getProject(), DIRECTORY, documentRepository, user);
+        List<Document> documents = FileUtils.saveDocuments(files, folder.getProject(),folder, DIRECTORY, documentRepository, user);
         folder.setDocuments(documents);
         folderRepository.save(folder);
         for (Document doc : documents) {

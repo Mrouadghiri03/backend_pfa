@@ -7,12 +7,14 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.hibernate.PropertyValueException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.pfa.api.app.entity.Branch;
 import com.pfa.api.app.entity.JoinRequest;
@@ -27,6 +29,7 @@ import com.pfa.api.app.repository.RoleRepository;
 import com.pfa.api.app.repository.UserRepository;
 import com.pfa.api.app.security.JwtService;
 import com.pfa.api.app.service.EmailService;
+import com.pfa.api.app.util.FileUtils;
 
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
@@ -45,9 +48,12 @@ public class AuthenticationService {
     private final RoleRepository roleRepository;
     private final JoinRequestRepository joinRequestRepository;
 
+    @Value("${upload.directory.photos}")
+    private String USER_IMAGES_DIRECTORY;
+
 
     
-    public AuthenticationResponse register(RegisterDTO request) throws SQLIntegrityConstraintViolationException ,
+    public AuthenticationResponse register(RegisterDTO request,MultipartFile image) throws SQLIntegrityConstraintViolationException ,
             PropertyValueException, NotFoundException {
                 
 
@@ -70,6 +76,7 @@ public class AuthenticationService {
                     });
             
         }
+
         Role userRole = roleRepository.findByName(request.getRole())
                 .orElseGet(() -> roleRepository.save(new Role(request.getRole())));
 
@@ -82,8 +89,7 @@ public class AuthenticationService {
             .roles(new ArrayList<>())
             .cin(request.getCin())
             .inscriptionNumber(request.getInscriptionNumber())
-            .phoneNumber(request.getPhoneNumber())
-            .enabled(true)//enabled(true)--->just to try with a deactivated acc=the acc that has been just created is by defaultt enabled
+            .enabled(false)//enabled(true)--->just to try with a deactivated acc=the acc that has been just created is by defaultt enabled
             .build();
 
         user.getRoles().add(userRole);
@@ -110,6 +116,9 @@ public class AuthenticationService {
         joinRequestRepository.save(joinRequest);
         user.setJoinRequest(joinRequest);
         userRepository.save(user);
+        if (image != null && !image.isEmpty()) {
+            FileUtils.saveUserImage(image, user, USER_IMAGES_DIRECTORY, userRepository);
+        }
 
         User headOfBranch = branch.getHeadOfBranch();
         
@@ -117,7 +126,7 @@ public class AuthenticationService {
         // using this part when i want that confirmation stuff
         Confirmation confirmation = new Confirmation(user);
         confirmationRepository.save(confirmation);
-        // emailService.sendNotificationEmailToHeadOfBranch(headOfBranch , user ,confirmation.getToken());
+        emailService.sendNotificationEmailToHeadOfBranch(headOfBranch , user ,confirmation.getToken());
 
         
         String jwtToken = jwtService.generateToken(user);
@@ -151,37 +160,37 @@ public class AuthenticationService {
             realUser.setEnabled(true);
             userRepository.save(realUser);
             confirmationRepository.delete(confirmation);
-            JoinRequest joinRequest = user.get().getJoinRequest();
-            joinRequest.setUser(null);
-            user.get().setJoinRequest(null);
-            joinRequestRepository.delete(joinRequest);
             return true;
         }
         return false;
     }
 
-    // Todo latter !!!
-    public  void sendPasswordResetLink(String email)  {}
+    public void forgotPassword(String email) {
+        Optional<User> user = userRepository.findByEmail(email);
+        if (user.isPresent()) {
+            user.get().setResetCode(UUID.randomUUID().toString());
+            userRepository.save(user.get());
+            emailService.sendForgotPasswordEmail(user.get());
+        }else{
+            throw new RuntimeException("User not found");
+        }
+    }
 
-    public void acceptUser(String token){
+    public void acceptUserByToken(String token){
         Confirmation confirmation = confirmationRepository.findByToken(token);
         Optional<User> user = userRepository.findByEmail(confirmation.getUser().getEmail());
         if (user.isPresent()) {
             emailService.sendConfirmationEmail(user.get().getFirstName(), user.get().getEmail(), token);
-            JoinRequest joinRequest = user.get().getJoinRequest();
-            joinRequest.setUser(null);
-            user.get().setJoinRequest(null);
-            joinRequestRepository.delete(joinRequest);
         }
     }
     public void acceptUser(Long id) {
         Optional<User> user = userRepository.findById(id);
         if (user.isPresent()) {
-            emailService.sendConfirmationEmail(user.get().getFirstName(), user.get().getEmail(), user.get().getConfirmation().getToken());
             JoinRequest joinRequest = user.get().getJoinRequest();
             joinRequest.setUser(null);
             user.get().setJoinRequest(null);
             joinRequestRepository.delete(joinRequest);
+            emailService.sendConfirmationEmail(user.get().getFirstName(), user.get().getEmail(), user.get().getConfirmation().getToken());
         }
     }
 
@@ -198,7 +207,7 @@ public class AuthenticationService {
         }
     }
 
-    public void rejectUser(String token){
+    public void rejectUserByToken(String token){
         Confirmation confirmation = confirmationRepository.findByToken(token);
         Optional<User> user = userRepository.findByEmail(confirmation.getUser().getEmail());
         if (user.isPresent()) {
@@ -209,6 +218,30 @@ public class AuthenticationService {
             user.get().setJoinRequest(null);
             joinRequestRepository.delete(joinRequest);
             userRepository.delete(user.get());
+        }
+    }
+
+    public void validateResetToken(String email, String token) {
+        Optional<User> user = userRepository.findByEmail(email);
+        if (user.isPresent()) {
+            if (user.get().getResetCode().equals(token)) {
+                return;
+            } else {
+                throw new RuntimeException("Invalid token");
+            }
+        } else {
+            throw new RuntimeException("User not found");
+        }
+    }
+
+    public void resetPassword(String token, String password) {
+        Optional<User> user = userRepository.findByResetCode(token);
+        if (user.isPresent()) {
+            user.get().setPassword(passwordEncoder.encode(password));
+            user.get().setResetCode(null);
+            userRepository.save(user.get());
+        } else {
+            throw new RuntimeException("User not found");
         }
     }
     

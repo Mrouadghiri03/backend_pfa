@@ -40,7 +40,6 @@ public class Sprint {
     @Column(nullable = false)
       private String description;
    
-    private Long velocity;
 
     @Column(nullable = false)
     private Date start_date;
@@ -49,6 +48,8 @@ public class Sprint {
     private  Date end_date;
     
     private boolean closed;
+
+    private boolean started;
     
     @OneToMany(mappedBy = "sprint",cascade = CascadeType.ALL)
     @JsonManagedReference

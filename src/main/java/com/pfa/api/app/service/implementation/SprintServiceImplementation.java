@@ -13,8 +13,10 @@ import com.pfa.api.app.entity.Sprint;
 import com.pfa.api.app.entity.UserStory;
 import com.pfa.api.app.repository.ProjectRepository;
 import com.pfa.api.app.repository.SprintRepository;
+import com.pfa.api.app.repository.UserRepository;
 import com.pfa.api.app.repository.UserStoryRepository;
 import com.pfa.api.app.service.SprintService;
+import com.pfa.api.app.util.UserUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,11 +29,27 @@ public class SprintServiceImplementation implements SprintService{
     @Override
     public SprintResponse AddSprint(SprintDTO sprintDTO) {
         Project project = projectRepository.findById(sprintDTO.getProjectId()).orElseThrow (() -> new RuntimeException("Project not found"));
+        List<Sprint> sprints = sprintRepository.findByProjectId(project.getId());
+         for (Sprint sprint : sprints) {
+               if (sprint.getName().equals(sprintDTO.getName())) {
+                  throw new RuntimeException("Sprint already exists");
+               }
+              if ((sprintDTO.getStart_date().before(sprint.getStart_date()) && sprintDTO.getEnd_date().after(sprint.getEnd_date())
+                  || (sprintDTO.getStart_date().after(sprint.getStart_date()) && sprintDTO.getEnd_date().before(sprint.getEnd_date()))
+                  || (sprintDTO.getStart_date().before(sprint.getStart_date()) && sprintDTO.getEnd_date().before(sprint.getEnd_date()) && sprintDTO.getEnd_date().after(sprint.getStart_date()))
+                  || (sprintDTO.getStart_date().after(sprint.getStart_date()) && sprintDTO.getStart_date().before(sprint.getEnd_date()) && sprintDTO.getEnd_date().after(sprint.getEnd_date())
+                  ))){
+                  throw new RuntimeException("Date range already exists");
+               
+              }
+         }
+
         Sprint sprint = Sprint.builder()
                 .name(sprintDTO.getName())
                 .start_date(sprintDTO.getStart_date())
                 .end_date(sprintDTO.getEnd_date())
-                .velocity(null)
+                .closed(false)
+                .started(false)
                 .description(sprintDTO.getDescription())
                 .project(project)
                 .build();
@@ -45,9 +63,6 @@ public class SprintServiceImplementation implements SprintService{
         Sprint sprint = sprintRepository.findById(id).orElseThrow (() -> new RuntimeException("Sprint not found"));
                  if (sprintDTO.getName()!=null) {
                     sprint.setName(sprintDTO.getName());
-                 }
-                 if (sprintDTO.getVelocity()!=null) {
-                    sprint.setVelocity(sprintDTO.getVelocity());
                  }
                  if (sprintDTO.getDescription()!=null) {
                   sprint.setDescription(sprintDTO.getDescription());
@@ -114,5 +129,20 @@ public class SprintServiceImplementation implements SprintService{
       return SprintResponse.fromEntity(sprint);
 
    }
+
+@Override
+public SprintResponse startSprint(Long id) {
+      Sprint sprint = sprintRepository.findById(id).orElseThrow (() -> new RuntimeException("Sprint not found"));
+      for (Sprint otherSprint : sprint.getProject().getSprints()) {
+         if (otherSprint.isStarted() && !otherSprint.isClosed()) {
+            throw new RuntimeException("Another sprint is already started");
+         }
+         
+      }
+      sprint.setStarted(true);
+      sprintRepository.save(sprint);
+      return SprintResponse.fromEntity(sprint);
+}
+   
     
 }

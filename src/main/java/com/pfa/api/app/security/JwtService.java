@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -22,8 +23,8 @@ import io.jsonwebtoken.security.Keys;
 @Service
 public class JwtService {
 
-    private static final String SECRET_KEY = "56c1b80832a7068351513048ebc351b53e2b77117a2570a266daa1f360ede1dc8cb47de468ff194399551b1fe04fa7655ac80dab97204b97ea253f6da3df1f191241aaacbd1dd7e81cd907acb63db363d90120f35f2e8e4401048b4190563f10d5044eb7d2b87a1bcd6b73a20243044563429460cd21dec46ee2f92e274ff413";
-
+    @Value("${jwt.secret}")
+    private  String SECRET_KEY;
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }

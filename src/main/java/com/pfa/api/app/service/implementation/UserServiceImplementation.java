@@ -38,6 +38,7 @@ public class UserServiceImplementation implements UserService {
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!imageFile.isEmpty()) {
+            FileUtils.deleteUserImage(user, USER_IMAGES_DIRECTORY, userRepository);
             FileUtils.saveUserImage(imageFile,user,USER_IMAGES_DIRECTORY,userRepository);
         }
 
@@ -116,6 +117,12 @@ public class UserServiceImplementation implements UserService {
     public ResponseEntity<byte[]> downloadProfileImage(Long userId) throws IOException {
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
         return FileUtils.downloadUserImage(user, USER_IMAGES_DIRECTORY);
+    }
+
+    @Override
+    public List<UserResponseDTO> getStudents() {
+        List<User> students = userRepository.findByRoleName(RoleName.ROLE_STUDENT.name());
+        return students.stream().map(UserResponseDTO::fromEntity).collect(Collectors.toList());
     }
 
 }
