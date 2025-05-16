@@ -2,6 +2,10 @@ package com.pfa.api.app.controller;
 
 import java.util.List;
 
+import com.pfa.api.app.repository.UserRepository;
+import com.pfa.api.app.security.JwtService;
+import com.pfa.api.app.util.UserUtils;
+import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class UserController {
 
     private final UserService userService;
-
+    private final  UserRepository userRepository;
     @PostMapping("/{userId}/uploadProfileImage")
     public ResponseEntity<UserResponseDTO> uploadProfileImage(@PathVariable Long userId,
             @RequestParam("image") MultipartFile imageFile) {
@@ -47,15 +51,24 @@ public class UserController {
         }
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<UserResponseDTO> getUser(@PathVariable Long id) {
-        UserResponseDTO user = userService.getUser(id);
-        if (user != null) {
-            return ResponseEntity.ok(user);
-        } else {
-            return ResponseEntity.notFound().build();
+   /* @PostMapping("/{userId}/uploadProfileImage")
+    public ResponseEntity<UserResponseDTO> uploadProfileImage(@PathVariable Long userId,
+                                                              @RequestParam("image") MultipartFile imageFile) {
+        try {
+            System.out.println("Received image file: " + imageFile.getOriginalFilename());
+            UserResponseDTO updatedUser = userService.uploadProfileImage(userId, imageFile);
+            System.out.println("Profile image uploaded successfully for user ID: " + userId);
+            return ResponseEntity.ok(updatedUser);
+        } catch (Exception e) {
+            System.err.println("Error uploading profile image for user ID: " + userId);
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
+
+
+    */
+
 
     @GetMapping
     public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
@@ -63,10 +76,26 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
+    @PutMapping("/updateMyDetails")
+    public ResponseEntity<UserResponseDTO> updateCurrentUser(
+            @RequestBody UserDTO userDTO) throws ChangeSetPersister.NotFoundException {
+
+        // 1. Récupérer l'utilisateur connecté via UserUtils
+        User currentUser = UserUtils.getCurrentUser(userRepository);
+
+        // 2. Mettre à jour l'utilisateur
+        UserResponseDTO updatedUser = userService.updateUser(currentUser.getId(), userDTO);
+
+        return ResponseEntity.ok(updatedUser);
+    }
+
     @PutMapping("/{userId}")
     public ResponseEntity<UserResponseDTO> updateUser(@PathVariable Long userId, @RequestBody UserDTO userDto) {
         try {
+
             UserResponseDTO updatedUser = userService.updateUser(userId, userDto);
+
+            System.out.println("user "+updatedUser.getLastName()+" "+updatedUser.getFirstName()+" is updated succefuly");
             return ResponseEntity.ok(updatedUser);
         } catch (Exception e) {
             e.printStackTrace();
