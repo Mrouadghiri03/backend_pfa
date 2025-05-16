@@ -39,9 +39,10 @@ public class CSVHelper {
     public static List<User> csvToStudents(InputStream is,PasswordEncoder passwordEncoder) throws IOException {
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
-            // Modification ici pour utiliser la tabulation comme délimiteur
+            // Modification ici pour utiliser la ; comme délimiteur
+            //ou bien des fois on utilse la tabulation ca depods du fichier csv
             CSVFormat format = CSVFormat.DEFAULT
-                    .withDelimiter('\t') // Utilisation de la tabulation
+                    .withDelimiter(';') // Utilisation de la ; // meme on peut utiliser tabulation si onest besoin
                     .withFirstRecordAsHeader()
                     .withIgnoreHeaderCase()
                     .withTrim()
