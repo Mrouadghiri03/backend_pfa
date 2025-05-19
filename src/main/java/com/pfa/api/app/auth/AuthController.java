@@ -53,82 +53,8 @@ public class AuthController {
           SQLIntegrityConstraintViolationException, NotFoundException {
       return ResponseEntity.ok(authenticationService.register(request, null));
   }
-  /*
-  @PostMapping("/registerSupervisor")
-    public ResponseEntity<AuthenticationResponse> registerSuperVisorViaHeadOfBranch(@RequestBody RegisterDTO request) throws SQLIntegrityConstraintViolationException, NotFoundException {
-        return ResponseEntity.ok(authenticationService.registerSuperVisorViaHeadOfBranch(request, null));
-    }
 
 
-   */
-
-/*
-  @PostMapping("/registerSupervisor")
-  public ResponseEntity<AuthenticationResponse> registerSupervisor(
-          @RequestBody RegisterDTO request,
-          @RequestHeader("Authorization") String authHeader
-  ) throws SQLIntegrityConstraintViolationException, NotFoundException {
-      // Vérifier que l'appelant est bien un headOfBranch
-      String token = authHeader.replace("Bearer ", "");
-      String currentUserEmail = jwtService.extractUsername(token);
-      User currentUser = userRepository.findByEmail(currentUserEmail)
-              .orElseThrow(() -> new NotFoundException("User not found"));
-
-      if(!currentUser.getRoles().stream().anyMatch(r -> r.getName().equals("ROLE_HEAD_OF_BRANCH"))) {
-          throw new AccessDeniedException("Only head of branch can register supervisors");
-      }
-
-      return ResponseEntity.ok(authenticationService.registerSuperVisorOrStudentViaHeadOfBranch(request,null));
-  }
-
-
- */
-    /*
-@PostMapping("/registerSupervisor")
-public ResponseEntity<AuthenticationResponse> registerSupervisor(
-        @RequestBody RegisterDTO request,
-        @RequestHeader("Authorization") String authHeader
-) throws SQLIntegrityConstraintViolationException, NotFoundException {
-
-    // 1. Vérification du header
-    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-        throw new IllegalArgumentException("Invalid Authorization header");
-    }
-
-    String token = authHeader.substring(7); // "Bearer ".length() = 7
-
-    // 2. Extraction du username (email)
-    String username = jwtService.extractUsername(token);
-    System.out.println("Extracted username: " + username); // Debug
-
-    // 3. Chargement du UserDetails
-    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-    // 4. Validation du token
-    if (!jwtService.isTokenValid(token, userDetails)) {
-        throw new AccessDeniedException("Invalid token");
-    }
-
-    // 5. Vérification du rôle
-    User currentUser = userRepository.findByEmail(username)
-            .orElseThrow(() -> new NotFoundException("User with email " + username + " not found"));
-
-    if(!currentUser.getRoles().stream().anyMatch(r -> r.getName().equals("ROLE_HEAD_OF_BRANCH"))) {
-        throw new AccessDeniedException("Only head of branch can register supervisors");
-    }
-
-    return ResponseEntity.ok(authenticationService.registerSuperVisorOrStudentViaHeadOfBranch(request, null));
-}
-
-     */
-    /*
-@PostMapping("/registerViaHoB")
-public ResponseEntity<AuthenticationResponse> registerSupervisorOrStudentViaHob(@RequestBody RegisterDTO request) throws
-        SQLIntegrityConstraintViolationException, NotFoundException {
-    return ResponseEntity.ok(authenticationService.registerSuperVisorOrStudentViaHeadOfBranch(request, null));
-}
-
-     */
 @PostMapping("/registerViaHoB")
 public ResponseEntity<AuthenticationResponse> registerSupervisorOrStudentViaHob(
         @RequestBody RegisterDTO request,
@@ -136,16 +62,16 @@ public ResponseEntity<AuthenticationResponse> registerSupervisorOrStudentViaHob(
         SQLIntegrityConstraintViolationException, NotFoundException {
 
     // Vérification de l'authentification
-    String token = authHeader.replace("Bearer ", "");
-    String email = jwtService.extractUsername(token);
-    Optional<User> currentUser = userRepository.findByEmail(email);
+    String token = authHeader.replace("Bearer ", "");// on prends ici le token
+    String email = jwtService.extractUsername(token);//extraire le token
+    Optional<User> currentUser = userRepository.findByEmail(email);//recupere le user connecté ; merci a yassine cteait un fonction deja implémenté par lui
 
     // Vérification des droits
    /* if(!currentUser.getRoles().stream().anyMatch(r ->
             r.getName().equals(RoleName.ROLE_HEAD_OF_BRANCH.name()))) {
         throw new AccessDeniedException("Only head of branch can register users");
     }
-
+ //c ame donne des erreur ici dans le role just a ajouté les erreur dans les authorizations
     */
 
     return ResponseEntity.ok(authenticationService.registerSuperVisorOrStudentViaHeadOfBranch(request, null));

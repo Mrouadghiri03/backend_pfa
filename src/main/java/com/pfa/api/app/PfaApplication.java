@@ -100,7 +100,6 @@ CommandLineRunner initDatabaseWithUser(UserRepository userRepository,
 					Branch newBranch = new Branch();
 					newBranch.setName("Informatique"); // ou un autre nom de branche
 					newBranch.setHeadOfBranch(headUser); // association
-
 					// 5. Sauvegarder la branche
 					branchRepository.save(newBranch);
 

@@ -132,103 +132,7 @@ public class AuthenticationService {
 
         return AuthenticationResponse.builder().token(jwtToken).build();
     }
-    /*
-    public AuthenticationResponse registerSuperVisorOrStudentViaHeadOfBranch(RegisterDTO request,MultipartFile image) throws SQLIntegrityConstraintViolationException ,
-            PropertyValueException, NotFoundException {
 
-
-
-        userRepository.findByEmail(request.getEmail())
-                .ifPresent(existingUser -> {
-                    throw new RuntimeException("Email already in use.");
-                });
-        if (request.getCin() != null) {
-            userRepository.findByCin(request.getCin())
-                    .ifPresent(existingUser -> {
-                        throw new RuntimeException("CIN already in use.");
-                    });
-        }
-        if (request.getInscriptionNumber() != null) {
-
-            userRepository.findByInscriptionNumber(request.getInscriptionNumber())
-                    .ifPresent(existingUser -> {
-                        throw new RuntimeException("Inscription Number already in use.");
-                    });
-
-        }
-
-        Role userRole = roleRepository.findByName(request.getRole())
-                .orElseGet(() -> roleRepository.save(new Role(request.getRole())));
-
-
-        User user = User.builder()
-                .firstName(request.getFirstName())
-                .lastName(request.getLastName())
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .roles(new ArrayList<>())
-                .cin(request.getCin())
-                .inscriptionNumber(request.getInscriptionNumber())
-               // .enabled(false)//enabled(true)--->just to try with a deactivated acc=the acc that has been just created is by defaultt enabled
-                .enabled(true)
-                //jai gardé enabled false car la fonction acceptUserByemail implemente deja la fonctionalité denvoyer un email apres la corfirmation
-                //si je mets directement true alors il va pas recevoir lemeail de confirmation
-                .build();
-
-        user.getRoles().add(userRole);
-
-        Branch branch = new Branch();
-        if (request.getRole().equals(RoleName.ROLE_STUDENT.name())) {
-            branch = branchRepository.findById(request.getBranch()).orElseThrow(NotFoundException::new);
-            user.setStudiedBranch(branch);
-        } else if(request.getRole().equals(RoleName.ROLE_SUPERVISOR.name())) {
-            branch = branchRepository.findById(request.getBranch()).orElseThrow(NotFoundException::new);
-            branch.getProfs().add(user);
-            user.setBranch(branch);
-        } else {
-            branch = branchRepository.findById(request.getBranch()).orElseThrow(NotFoundException::new);
-            user.setBranch(branch);
-        }
-
-        userRepository.save(user);
-       // authenticationService.acceptUserByEmail(user.getEmail());//apelle de la fonction pour enabler le user
-
-      /*  JoinRequest joinRequest = new JoinRequest();
-        joinRequest.setUser(user);
-        joinRequest.setBranch(branch);
-        joinRequest.setRequestDate(new Date());
-
-        joinRequestRepository.save(joinRequest);
-        user.setJoinRequest(joinRequest);
-        userRepository.save(user);
-
-       */
-    /*
-        if (image != null && !image.isEmpty()) {
-            FileUtils.saveUserImage(image, user, USER_IMAGES_DIRECTORY, userRepository);
-        }
-
-        User headOfBranch = branch.getHeadOfBranch();
-
-
-        // using this part when i want that confirmation stuff
-      //  Confirmation confirmation = new Confirmation(user);
-       // confirmationRepository.save(confirmation);
-       // emailService.sendNotificationEmailToHeadOfBranch(headOfBranch , user ,confirmation.getToken());
-      //  JoinRequest joinRequest1=user.getJoinRequest();
-
-        //joinRequest1.setUser(null);
-        //user.setJoinRequest(null);
-        //joinRequestRepository.delete(joinRequest1);
-        emailService.sendConfirmationEmail(user.getFirstName(), user.getEmail(), user.getConfirmation().getToken());
-
-
-        String jwtToken = jwtService.generateToken(user);
-
-
-        return AuthenticationResponse.builder().token(jwtToken).build();
-    }
-    */
     public AuthenticationResponse registerSuperVisorOrStudentViaHeadOfBranch(
             RegisterDTO request, MultipartFile image) throws
             SQLIntegrityConstraintViolationException, PropertyValueException, NotFoundException {
@@ -250,13 +154,14 @@ public class AuthenticationService {
         // Gestion du rôle
         Role userRole = roleRepository.findByName(request.getRole())
                 .orElseGet(() -> roleRepository.save(new Role(request.getRole())));
-
+        String password="Ensao25";//le mot de pass par default creer pour les user creéé par le chef de fillliere ; il peu le changé ici mais il faut quon le change dans lemail aussi
+        //a poser la question sur monsieur bouchentouf pour le mot de passe par default utilisé
         // Création de l'utilisateur
         User user = User.builder()
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
+                .password(passwordEncoder.encode(password))
                 .roles(new ArrayList<>())
                 .cin(request.getCin())
                 .inscriptionNumber(request.getInscriptionNumber())
@@ -296,10 +201,11 @@ public class AuthenticationService {
         }
 //envoi demail
 
-        System.out.println("email"+user.getEmail());
-        System.out.println("name"+user.getFirstName()+"__"+user.getLastName());
-        System.out.println("confirmation "+user.getConfirmation());
-        emailService.sendInformingEmailToNewUser(user,"Your account has been created , your password is ensao23, you can login now , and you change it ");
+        System.out.println("email "+user.getEmail());
+        System.out.println("name "+user.getFirstName()+"__"+user.getLastName());
+        System.out.println("confirmation "+user.getConfirmation());//ca marche pas avec la confiramtion car jai sauter la demarche ou le head of branche
+        //accept la creation de son compte par lui méme car cest le chef de filliere qui s'occupe de ca
+        emailService.sendInformingEmailToNewUser(user,"Your account has been created , your password is "+password+", you can login now , and you change it ");
         //emailService.sendConfirmationEmail(user.getFirstName(), user.getEmail(), user.getConfirmation().getToken());
 
 
