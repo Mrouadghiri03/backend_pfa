@@ -161,6 +161,29 @@ public class EmailServiceImplementation implements EmailService{
 
     @Override
     @Async
+    public void sendInformingEmailToNewUser(User user,String msg){
+        try {
+            MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+
+            helper.setTo(user.getEmail());
+            helper.setSubject("Account Created");
+
+            Context context = new Context();
+            context.setVariable("name", user.getFirstName());
+            context.setVariable("message", msg);
+
+            String htmlContent = templateEngine.process("email/emailInformingTemplate", context);
+            helper.setText(htmlContent, true);
+            javaMailSender.send(mimeMessage);
+
+        } catch (Exception e) {
+            System.out.println("message : " + e.getMessage());
+            System.out.println("cause : " + e.getCause());
+        }
+    }
+    @Override
+    @Async
     public void sendForgotPasswordEmail(User user) {
         try {
             MimeMessage mimeMessage = javaMailSender.createMimeMessage();

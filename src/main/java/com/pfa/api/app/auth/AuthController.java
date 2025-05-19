@@ -1,22 +1,23 @@
 package com.pfa.api.app.auth;
 
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.Optional;
 
+import com.pfa.api.app.entity.user.RoleName;
+import com.pfa.api.app.entity.user.User;
+import com.pfa.api.app.repository.UserRepository;
 import org.hibernate.PropertyValueException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
+import com.pfa.api.app.security.JwtService;
 
 import com.pfa.api.app.JsonRsponse.JsonResponse;
 
@@ -29,8 +30,12 @@ import lombok.RequiredArgsConstructor;
 public class AuthController {
 
     private final AuthenticationService authenticationService;
+    private final JwtService jwtService;
+
+    private final UserRepository userRepository;
+
     
-    @PostMapping("/register")
+  /*  @PostMapping("/register")
     public ResponseEntity<AuthenticationResponse> register(@ModelAttribute RegisterDTO request,
                 @RequestParam(value = "image", required = false) MultipartFile image) throws SQLIntegrityConstraintViolationException, PropertyValueException, NotFoundException{
         // using this part when i want that confirmation stuff
@@ -41,6 +46,110 @@ public class AuthController {
         
         return ResponseEntity.ok(authenticationService.register(request,image));
     }
+
+   */
+  @PostMapping("/register")
+  public ResponseEntity<AuthenticationResponse> register(@RequestBody RegisterDTO request) throws
+          SQLIntegrityConstraintViolationException, NotFoundException {
+      return ResponseEntity.ok(authenticationService.register(request, null));
+  }
+  /*
+  @PostMapping("/registerSupervisor")
+    public ResponseEntity<AuthenticationResponse> registerSuperVisorViaHeadOfBranch(@RequestBody RegisterDTO request) throws SQLIntegrityConstraintViolationException, NotFoundException {
+        return ResponseEntity.ok(authenticationService.registerSuperVisorViaHeadOfBranch(request, null));
+    }
+
+
+   */
+
+/*
+  @PostMapping("/registerSupervisor")
+  public ResponseEntity<AuthenticationResponse> registerSupervisor(
+          @RequestBody RegisterDTO request,
+          @RequestHeader("Authorization") String authHeader
+  ) throws SQLIntegrityConstraintViolationException, NotFoundException {
+      // Vérifier que l'appelant est bien un headOfBranch
+      String token = authHeader.replace("Bearer ", "");
+      String currentUserEmail = jwtService.extractUsername(token);
+      User currentUser = userRepository.findByEmail(currentUserEmail)
+              .orElseThrow(() -> new NotFoundException("User not found"));
+
+      if(!currentUser.getRoles().stream().anyMatch(r -> r.getName().equals("ROLE_HEAD_OF_BRANCH"))) {
+          throw new AccessDeniedException("Only head of branch can register supervisors");
+      }
+
+      return ResponseEntity.ok(authenticationService.registerSuperVisorOrStudentViaHeadOfBranch(request,null));
+  }
+
+
+ */
+    /*
+@PostMapping("/registerSupervisor")
+public ResponseEntity<AuthenticationResponse> registerSupervisor(
+        @RequestBody RegisterDTO request,
+        @RequestHeader("Authorization") String authHeader
+) throws SQLIntegrityConstraintViolationException, NotFoundException {
+
+    // 1. Vérification du header
+    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        throw new IllegalArgumentException("Invalid Authorization header");
+    }
+
+    String token = authHeader.substring(7); // "Bearer ".length() = 7
+
+    // 2. Extraction du username (email)
+    String username = jwtService.extractUsername(token);
+    System.out.println("Extracted username: " + username); // Debug
+
+    // 3. Chargement du UserDetails
+    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+    // 4. Validation du token
+    if (!jwtService.isTokenValid(token, userDetails)) {
+        throw new AccessDeniedException("Invalid token");
+    }
+
+    // 5. Vérification du rôle
+    User currentUser = userRepository.findByEmail(username)
+            .orElseThrow(() -> new NotFoundException("User with email " + username + " not found"));
+
+    if(!currentUser.getRoles().stream().anyMatch(r -> r.getName().equals("ROLE_HEAD_OF_BRANCH"))) {
+        throw new AccessDeniedException("Only head of branch can register supervisors");
+    }
+
+    return ResponseEntity.ok(authenticationService.registerSuperVisorOrStudentViaHeadOfBranch(request, null));
+}
+
+     */
+    /*
+@PostMapping("/registerViaHoB")
+public ResponseEntity<AuthenticationResponse> registerSupervisorOrStudentViaHob(@RequestBody RegisterDTO request) throws
+        SQLIntegrityConstraintViolationException, NotFoundException {
+    return ResponseEntity.ok(authenticationService.registerSuperVisorOrStudentViaHeadOfBranch(request, null));
+}
+
+     */
+@PostMapping("/registerViaHoB")
+public ResponseEntity<AuthenticationResponse> registerSupervisorOrStudentViaHob(
+        @RequestBody RegisterDTO request,
+        @RequestHeader("Authorization") String authHeader) throws
+        SQLIntegrityConstraintViolationException, NotFoundException {
+
+    // Vérification de l'authentification
+    String token = authHeader.replace("Bearer ", "");
+    String email = jwtService.extractUsername(token);
+    Optional<User> currentUser = userRepository.findByEmail(email);
+
+    // Vérification des droits
+   /* if(!currentUser.getRoles().stream().anyMatch(r ->
+            r.getName().equals(RoleName.ROLE_HEAD_OF_BRANCH.name()))) {
+        throw new AccessDeniedException("Only head of branch can register users");
+    }
+
+    */
+
+    return ResponseEntity.ok(authenticationService.registerSuperVisorOrStudentViaHeadOfBranch(request, null));
+}
 
     @PostMapping("/authenticate")
     public ResponseEntity<AuthenticationResponse> authenticate(@RequestBody AuthenticationDTO request)throws JwtException{

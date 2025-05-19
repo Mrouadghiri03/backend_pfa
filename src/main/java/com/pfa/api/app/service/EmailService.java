@@ -10,4 +10,5 @@ public interface EmailService {
     void sendProjectApprovalEmail(Project project);
     void sendInformingEmail(User to, String message);
     void sendForgotPasswordEmail(User user);
+    void sendInformingEmailToNewUser(User user,String msg);
 }

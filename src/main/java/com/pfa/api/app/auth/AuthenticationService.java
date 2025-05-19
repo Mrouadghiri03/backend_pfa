@@ -1,10 +1,7 @@
 package com.pfa.api.app.auth;
 
 import java.sql.SQLIntegrityConstraintViolationException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import org.hibernate.PropertyValueException;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,6 +44,7 @@ public class AuthenticationService {
     private final EmailService emailService;
     private final RoleRepository roleRepository;
     private final JoinRequestRepository joinRequestRepository;
+
 
     @Value("${upload.directory.photos}")
     private String USER_IMAGES_DIRECTORY;
@@ -134,6 +132,184 @@ public class AuthenticationService {
 
         return AuthenticationResponse.builder().token(jwtToken).build();
     }
+    /*
+    public AuthenticationResponse registerSuperVisorOrStudentViaHeadOfBranch(RegisterDTO request,MultipartFile image) throws SQLIntegrityConstraintViolationException ,
+            PropertyValueException, NotFoundException {
+
+
+
+        userRepository.findByEmail(request.getEmail())
+                .ifPresent(existingUser -> {
+                    throw new RuntimeException("Email already in use.");
+                });
+        if (request.getCin() != null) {
+            userRepository.findByCin(request.getCin())
+                    .ifPresent(existingUser -> {
+                        throw new RuntimeException("CIN already in use.");
+                    });
+        }
+        if (request.getInscriptionNumber() != null) {
+
+            userRepository.findByInscriptionNumber(request.getInscriptionNumber())
+                    .ifPresent(existingUser -> {
+                        throw new RuntimeException("Inscription Number already in use.");
+                    });
+
+        }
+
+        Role userRole = roleRepository.findByName(request.getRole())
+                .orElseGet(() -> roleRepository.save(new Role(request.getRole())));
+
+
+        User user = User.builder()
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .roles(new ArrayList<>())
+                .cin(request.getCin())
+                .inscriptionNumber(request.getInscriptionNumber())
+               // .enabled(false)//enabled(true)--->just to try with a deactivated acc=the acc that has been just created is by defaultt enabled
+                .enabled(true)
+                //jai gardé enabled false car la fonction acceptUserByemail implemente deja la fonctionalité denvoyer un email apres la corfirmation
+                //si je mets directement true alors il va pas recevoir lemeail de confirmation
+                .build();
+
+        user.getRoles().add(userRole);
+
+        Branch branch = new Branch();
+        if (request.getRole().equals(RoleName.ROLE_STUDENT.name())) {
+            branch = branchRepository.findById(request.getBranch()).orElseThrow(NotFoundException::new);
+            user.setStudiedBranch(branch);
+        } else if(request.getRole().equals(RoleName.ROLE_SUPERVISOR.name())) {
+            branch = branchRepository.findById(request.getBranch()).orElseThrow(NotFoundException::new);
+            branch.getProfs().add(user);
+            user.setBranch(branch);
+        } else {
+            branch = branchRepository.findById(request.getBranch()).orElseThrow(NotFoundException::new);
+            user.setBranch(branch);
+        }
+
+        userRepository.save(user);
+       // authenticationService.acceptUserByEmail(user.getEmail());//apelle de la fonction pour enabler le user
+
+      /*  JoinRequest joinRequest = new JoinRequest();
+        joinRequest.setUser(user);
+        joinRequest.setBranch(branch);
+        joinRequest.setRequestDate(new Date());
+
+        joinRequestRepository.save(joinRequest);
+        user.setJoinRequest(joinRequest);
+        userRepository.save(user);
+
+       */
+    /*
+        if (image != null && !image.isEmpty()) {
+            FileUtils.saveUserImage(image, user, USER_IMAGES_DIRECTORY, userRepository);
+        }
+
+        User headOfBranch = branch.getHeadOfBranch();
+
+
+        // using this part when i want that confirmation stuff
+      //  Confirmation confirmation = new Confirmation(user);
+       // confirmationRepository.save(confirmation);
+       // emailService.sendNotificationEmailToHeadOfBranch(headOfBranch , user ,confirmation.getToken());
+      //  JoinRequest joinRequest1=user.getJoinRequest();
+
+        //joinRequest1.setUser(null);
+        //user.setJoinRequest(null);
+        //joinRequestRepository.delete(joinRequest1);
+        emailService.sendConfirmationEmail(user.getFirstName(), user.getEmail(), user.getConfirmation().getToken());
+
+
+        String jwtToken = jwtService.generateToken(user);
+
+
+        return AuthenticationResponse.builder().token(jwtToken).build();
+    }
+    */
+    public AuthenticationResponse registerSuperVisorOrStudentViaHeadOfBranch(
+            RegisterDTO request, MultipartFile image) throws
+            SQLIntegrityConstraintViolationException, PropertyValueException, NotFoundException {
+
+        // Vérification des doublons
+        userRepository.findByEmail(request.getEmail())
+                .ifPresent(u -> { throw new RuntimeException("Email already in use"); });
+
+        if (request.getCin() != null) {
+            userRepository.findByCin(request.getCin())
+                    .ifPresent(u -> { throw new RuntimeException("CIN already in use"); });
+        }
+
+        if (request.getInscriptionNumber() != null) {
+            userRepository.findByInscriptionNumber(request.getInscriptionNumber())
+                    .ifPresent(u -> { throw new RuntimeException("Inscription number in use"); });
+        }
+
+        // Gestion du rôle
+        Role userRole = roleRepository.findByName(request.getRole())
+                .orElseGet(() -> roleRepository.save(new Role(request.getRole())));
+
+        // Création de l'utilisateur
+        User user = User.builder()
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .roles(new ArrayList<>())
+                .cin(request.getCin())
+                .inscriptionNumber(request.getInscriptionNumber())
+                .enabled(true) // Ou false selon votre workflow
+                .build();
+
+        user.getRoles().add(userRole);
+
+        // Gestion de la branche
+        Branch branch = new Branch();
+        if (request.getRole().equals(RoleName.ROLE_STUDENT.name())) {
+            branch = branchRepository.findById(request.getBranch()).orElseThrow(NotFoundException::new);
+            user.setStudiedBranch(branch);
+        } else if(request.getRole().equals(RoleName.ROLE_SUPERVISOR.name())) {
+            branch = branchRepository.findById(request.getBranch()).orElseThrow(NotFoundException::new);
+            branch.getProfs().add(user);
+            user.setBranch(branch);
+        } else {
+            branch = branchRepository.findById(request.getBranch()).orElseThrow(NotFoundException::new);
+            user.setBranch(branch);
+        }
+        if (request.getRole().equals(RoleName.ROLE_STUDENT.name())) {
+            user.setStudiedBranch(branch);
+        } else {
+            user.setBranch(branch);
+            if (request.getRole().equals(RoleName.ROLE_SUPERVISOR.name())) {
+                branch.getProfs().add(user);
+            }
+        }
+
+        // Sauvegarde
+        user = userRepository.save(user);
+
+        // Gestion de l'image
+        if (image != null && !image.isEmpty()) {
+            FileUtils.saveUserImage(image, user, USER_IMAGES_DIRECTORY, userRepository);
+        }
+//envoi demail
+
+        System.out.println("email"+user.getEmail());
+        System.out.println("name"+user.getFirstName()+"__"+user.getLastName());
+        System.out.println("confirmation "+user.getConfirmation());
+        emailService.sendInformingEmailToNewUser(user,"Your account has been created , your password is ensao23, you can login now , and you change it ");
+        //emailService.sendConfirmationEmail(user.getFirstName(), user.getEmail(), user.getConfirmation().getToken());
+
+
+        // Génération du token JWT
+        String jwtToken = jwtService.generateToken(user);
+
+        return AuthenticationResponse.builder()
+                .token(jwtToken)
+                .build();
+    }
 
     public AuthenticationResponse authenticate(AuthenticationDTO request) {
         try {
@@ -193,6 +369,17 @@ public class AuthenticationService {
             emailService.sendConfirmationEmail(user.get().getFirstName(), user.get().getEmail(), user.get().getConfirmation().getToken());
         }
     }
+    public void acceptUserByEmail(String email) {
+        Optional<User> user = userRepository.findByEmail(email);
+        if (user.isPresent()) {
+            JoinRequest joinRequest = user.get().getJoinRequest();
+            joinRequest.setUser(null);
+            user.get().setJoinRequest(null);
+            joinRequestRepository.delete(joinRequest);
+            emailService.sendConfirmationEmail(user.get().getFirstName(), user.get().getEmail(), user.get().getConfirmation().getToken());
+        }
+    }
+
 
     public void rejectUser(Long id) {
         Optional<User> user = userRepository.findById(id);

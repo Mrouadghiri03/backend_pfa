@@ -1,9 +1,11 @@
 package com.pfa.api.app;
 
+import com.pfa.api.app.entity.Branch;
 import com.pfa.api.app.entity.user.Role;
 import com.pfa.api.app.entity.user.User;
 import com.pfa.api.app.repository.RoleRepository;
 import com.pfa.api.app.repository.UserRepository;
+import com.pfa.api.app.repository.BranchRepository;
 import com.pfa.api.app.service.UserService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -28,18 +30,17 @@ public class PfaApplication {
 //pour la creatoin des user via csv il reste des choses de securité et des path a verfifer apres
 	// surtout avec hamdaoui car il faut que je  pose des question sur la securité de lapplication et
 	// surtout la creation des branches comme il nous a dit dans le meet , aussi jattends qui me push le backend de cette application la
-	@Bean
+	/*@Bean
 	CommandLineRunner initDatabaseWithUser(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
 		final String studentEmail = "test.student@example.com"; // Email de l'utilisateur test
-
 		return args -> {
 			// Vérifier si un utilisateur avec cet email existe déjà
 			userRepository.findByEmail(studentEmail).ifPresentOrElse(
 					user -> System.out.println("L'utilisateur avec l'email " + studentEmail + " existe déjà: " + user.getId()),
 					() -> {
 						// Créer le rôle ROLE_STUDENT s'il n'existe pas
-						Role studentRole = roleRepository.findByName("ROLE_STUDENT").orElseGet(() -> {
-							Role newRole = new Role("ROLE_STUDENT");
+						Role studentRole = roleRepository.findByName("ROLE_HEAD_OF_BRANCH").orElseGet(() -> {
+							Role newRole = new Role("ROLE_HEAD_OF_BRANCH");
 							return roleRepository.save(newRole);
 						});
 
@@ -60,5 +61,57 @@ public class PfaApplication {
 					}
 			);
 		};
+
+
+
 	}
+
+	 */
+@Bean
+CommandLineRunner initDatabaseWithUser(UserRepository userRepository,
+									   RoleRepository roleRepository,
+									   BranchRepository branchRepository,
+									   PasswordEncoder passwordEncoder) {
+	final String studentEmail = "test.student@example.com";
+
+	return args -> {
+		userRepository.findByEmail(studentEmail).ifPresentOrElse(
+				user -> System.out.println("L'utilisateur avec l'email " + studentEmail + " existe déjà: " + user.getId()),
+				() -> {
+					// 1. Créer ou récupérer le rôle
+					Role headOfBranchRole = roleRepository.findByName("ROLE_HEAD_OF_BRANCH")
+							.orElseGet(() -> roleRepository.save(new Role("ROLE_HEAD_OF_BRANCH")));
+
+					// 2. Créer un nouvel utilisateur
+					User headUser = new User();
+					headUser.setFirstName("Test");
+					headUser.setLastName("Student");
+					headUser.setEmail(studentEmail);
+					headUser.setCin("TESTCIN123");
+					headUser.setInscriptionNumber("TESTINS456");
+					headUser.setPassword(passwordEncoder.encode("password"));
+					headUser.setEnabled(true);
+					headUser.setRoles(List.of(headOfBranchRole));
+
+					// 3. Sauvegarder temporairement pour avoir un ID
+					userRepository.save(headUser);
+
+					// 4. Créer une nouvelle branche avec ce user comme head
+					Branch newBranch = new Branch();
+					newBranch.setName("Informatique"); // ou un autre nom de branche
+					newBranch.setHeadOfBranch(headUser); // association
+
+					// 5. Sauvegarder la branche
+					branchRepository.save(newBranch);
+
+					// 6. (Optionnel) mettre à jour le user avec la branche si nécessaire
+					headUser.setBranch(newBranch);
+					userRepository.save(headUser);
+
+					System.out.println("L'utilisateur HEAD OF BRANCH et sa branche ont été créés.");
+				}
+		);
+	};
+}
+
 }
