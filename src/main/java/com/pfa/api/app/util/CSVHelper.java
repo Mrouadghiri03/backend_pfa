@@ -74,6 +74,7 @@ public class CSVHelper {
                     user.setEnabled(true);
                     user.setResetCode(record.get("reset_code").trim());
                     user.setProfileImage(record.get("profile_image").trim());
+                    user.setPasswordChanged(false);
 
                     students.add(user);
 

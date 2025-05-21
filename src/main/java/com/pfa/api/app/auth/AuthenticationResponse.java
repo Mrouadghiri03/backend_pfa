@@ -11,4 +11,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AuthenticationResponse {
     private String token;
+    private boolean passwordChangeRequired; // Flag de changement obligatoire
+    private String temporaryToken;  // Token pour changement de mot de passe
 }

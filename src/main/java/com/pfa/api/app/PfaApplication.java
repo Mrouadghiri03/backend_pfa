@@ -15,7 +15,9 @@ import org.springframework.cache.annotation.EnableCaching;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 import org.springframework.context.annotation.Bean;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,49 +70,56 @@ public class PfaApplication {
 
 	 */
 @Bean
+@Transactional
 CommandLineRunner initDatabaseWithUser(UserRepository userRepository,
 									   RoleRepository roleRepository,
 									   BranchRepository branchRepository,
 									   PasswordEncoder passwordEncoder) {
-	final String studentEmail = "test.student@example.com";
+	final String studentEmail = "islam.elkhadir23@ump.ac.ma".trim().toLowerCase();
 
 	return args -> {
 		userRepository.findByEmail(studentEmail).ifPresentOrElse(
-				user -> System.out.println("L'utilisateur avec l'email " + studentEmail + " existe déjà: " + user.getId()),
+				user -> System.out.println("Utilisateur existant - ID: " + user.getId()),
 				() -> {
-					// 1. Créer ou récupérer le rôle
-					Role headOfBranchRole = roleRepository.findByName("ROLE_HEAD_OF_BRANCH")
-							.orElseGet(() -> roleRepository.save(new Role("ROLE_HEAD_OF_BRANCH")));
+					try {
+						// 1. Création du rôle
+						Role headOfBranchRole = roleRepository.findByName("ROLE_HEAD_OF_BRANCH")
+								.orElseGet(() -> roleRepository.save(new Role("ROLE_HEAD_OF_BRANCH")));
 
-					// 2. Créer un nouvel utilisateur
-					User headUser = new User();
-					headUser.setFirstName("Test");
-					headUser.setLastName("Student");
-					headUser.setEmail(studentEmail);
-					headUser.setCin("TESTCIN123");
-					headUser.setInscriptionNumber("TESTINS456");
-					headUser.setPassword(passwordEncoder.encode("password"));
-					headUser.setEnabled(true);
-					headUser.setRoles(List.of(headOfBranchRole));
+						// 2. Création de l'utilisateur
+						User newUser = User.builder()
+								.firstName("Test")
+								.lastName("Student")
+								.email(studentEmail)
+								.cin("TESTCIN123")
+								.inscriptionNumber("TESTINS456")
+								.password(passwordEncoder.encode("password"))
+								.enabled(true)
+								.roles(List.of(headOfBranchRole))
+								.build();
 
-					// 3. Sauvegarder temporairement pour avoir un ID
-					userRepository.save(headUser);
+						User savedUser = userRepository.save(newUser);
+						System.out.println("[DEBUG] Utilisateur créé : " + savedUser);
 
-					// 4. Créer une nouvelle branche avec ce user comme head
-					Branch newBranch = new Branch();
-					newBranch.setName("Informatique"); // ou un autre nom de branche
-					newBranch.setHeadOfBranch(headUser); // association
-					// 5. Sauvegarder la branche
-					branchRepository.save(newBranch);
+						// 3. Création de la branche
+						Branch newBranch = new Branch();
+						newBranch.setName("Informatique");
+						newBranch.setHeadOfBranch(savedUser);
+						branchRepository.save(newBranch);
 
-					// 6. (Optionnel) mettre à jour le user avec la branche si nécessaire
-					headUser.setBranch(newBranch);
-					userRepository.save(headUser);
+						// 4. Mise à jour bidirectionnelle
+						savedUser.setBranch(newBranch);
+						userRepository.save(savedUser);
 
-					System.out.println("L'utilisateur HEAD OF BRANCH et sa branche ont été créés.");
+						System.out.println("Création réussie - User ID: " + savedUser.getId());
+
+					} catch (DataIntegrityViolationException e) {
+						String errorMsg = "ERREUR: " + e.getMostSpecificCause().getMessage();
+						System.err.println(errorMsg);
+						throw new IllegalStateException(errorMsg);
+					}
 				}
 		);
 	};
 }
-
 }

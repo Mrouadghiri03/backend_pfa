@@ -7,6 +7,7 @@ import org.hibernate.PropertyValueException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -88,7 +89,8 @@ public class AuthenticationService {
             .cin(request.getCin())
             .inscriptionNumber(request.getInscriptionNumber())
             .enabled(false)//enabled(true)--->just to try with a deactivated acc=the acc that has been just created is by defaultt enabled
-            .build();
+                .passwordChanged(false) // i a Ajoute ce champ
+                .build();
 
         user.getRoles().add(userRole);
 
@@ -166,6 +168,7 @@ public class AuthenticationService {
                 .cin(request.getCin())
                 .inscriptionNumber(request.getInscriptionNumber())
                 .enabled(true) // Ou false selon votre workflow
+                .passwordChanged(false) // i a Ajoute ce champ
                 .build();
 
         user.getRoles().add(userRole);
@@ -217,7 +220,7 @@ public class AuthenticationService {
                 .build();
     }
 
-    public AuthenticationResponse authenticate(AuthenticationDTO request) {
+    /*public AuthenticationResponse authenticate(AuthenticationDTO request) {
         try {
             authenticationManager
                     .authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
@@ -231,6 +234,45 @@ public class AuthenticationService {
         String jwtToken = jwtService.generateToken(user);
 
         return AuthenticationResponse.builder().token(jwtToken).build();
+    }*/
+    public AuthenticationResponse authenticate(AuthenticationDTO request) {
+        User user = userRepository.findByInscriptionNumber(request.getInscriptionNumber())
+                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new BadCredentialsException("Invalid credentials");
+        }
+
+    // Générer le temporaryToken même si le mot de passe n'est pas changé
+    String tempToken = jwtService.generatePasswordChangeToken(user);
+
+    if (!user.isPasswordChanged()) {
+
+        System.out.println("Temporary Token: " + tempToken); // Debug
+        return AuthenticationResponse.builder()
+                .temporaryToken(tempToken)
+                .passwordChangeRequired(true)
+                .build();
+    }
+
+    // Si le mot de passe est déjà changé
+    String jwtToken = jwtService.generateToken(user);
+    return AuthenticationResponse.builder()
+            .token(jwtToken)
+        .passwordChangeRequired(false)
+        .build();
+    }
+    public void changeInitialPassword(PasswordChangeDTO dto) {
+        User user = jwtService.validatePasswordChangeToken(dto.temporaryToken());
+
+
+        if (!passwordEncoder.matches(dto.oldPassword(), user.getPassword())) {
+            throw new BadCredentialsException("Mot de passe initial incorrect");
+        }
+
+        user.setPassword(passwordEncoder.encode(dto.newPassword()));
+        user.setPasswordChanged(true);
+        userRepository.save(user);
     }
 
     public  Boolean validateToken(String token)  {
@@ -248,15 +290,14 @@ public class AuthenticationService {
     }
 
     public void forgotPassword(String email) {
-        Optional<User> user = userRepository.findByEmail(email);
-        if (user.isPresent()) {
-            user.get().setResetCode(UUID.randomUUID().toString());
-            userRepository.save(user.get());
-            emailService.sendForgotPasswordEmail(user.get());
-        }else{
-            throw new RuntimeException("User not found");
-        }
+        String normalizedEmail = email.trim().toLowerCase(); // Normalisation
+        User user = userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setResetCode(UUID.randomUUID().toString());
+        userRepository.save(user);
+        emailService.sendForgotPasswordEmail(user);
     }
+
 
     public void acceptUserByToken(String token){
         Confirmation confirmation = confirmationRepository.findByToken(token);
@@ -327,7 +368,7 @@ public class AuthenticationService {
         }
     }
 
-    public void resetPassword(String token, String password) {
+   /* public void resetPassword(String token, String password) {
         Optional<User> user = userRepository.findByResetCode(token);
         if (user.isPresent()) {
             user.get().setPassword(passwordEncoder.encode(password));
@@ -336,6 +377,17 @@ public class AuthenticationService {
         } else {
             throw new RuntimeException("User not found");
         }
-    }
+    }*/
+   public void resetPassword(String token, String password) {
+       Optional<User> user = userRepository.findByResetCode(token);
+       if (user.isPresent()) {
+           user.get().setPassword(passwordEncoder.encode(password));
+           user.get().setResetCode(null);
+           user.get().setPasswordChanged(true);
+           userRepository.save(user.get());
+       } else {
+           throw new RuntimeException("User not found");
+       }
+   }
     
 }

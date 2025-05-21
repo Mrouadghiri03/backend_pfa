@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import io.jsonwebtoken.JwtException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -20,8 +21,14 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 
+import com.pfa.api.app.entity.user.User;
+import com.pfa.api.app.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+
 @Service
 public class JwtService {
+    @Autowired
+    private UserRepository userRepository;
 
     @Value("${jwt.secret}")
     private  String SECRET_KEY;
@@ -82,5 +89,40 @@ public String generateToken(Map<String, Object> extraClaims, UserDetails userDet
         byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
         return Keys.hmacShaKeyFor(keyBytes);
     }
+    public String generatePasswordChangeToken(User user) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("passwordChange", true);
+        return Jwts.builder()
+                .setClaims(claims)
+                .setSubject(user.getInscriptionNumber())
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 15 * 60 * 1000))
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public User validatePasswordChangeToken(String token) {
+        Claims claims = extractAllClaims(token);
+        if(!claims.containsKey("passwordChange")) {
+            throw new JwtException("Invalid token type");
+        }
+        return userRepository.findByInscriptionNumber(claims.getSubject())
+                .orElseThrow(() -> new JwtException("User not found"));
+    }
+    public String generateTempToken(User user) {
+        return Jwts.builder()
+                .setSubject(user.getInscriptionNumber())
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 15 * 60 * 1000)) // 15min
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256) // Utilisez getSigningKey() au lieu de SECRET_KEY
+                .compact();
+    }
+
+    public User validateTempToken(String token) {
+        Claims claims = extractAllClaims(token); // Utilisez la méthode existante
+        return userRepository.findByInscriptionNumber(claims.getSubject())
+                .orElseThrow(() -> new JwtException("Token invalide"));
+    }
+
 
 }

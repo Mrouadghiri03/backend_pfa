@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -48,11 +49,11 @@ public class AuthController {
     }
 
    */
-  @PostMapping("/register")
-  public ResponseEntity<AuthenticationResponse> register(@RequestBody RegisterDTO request) throws
+  /*@PostMapping("/register")public ResponseEntity<AuthenticationResponse> register(@RequestBody RegisterDTO request) throws
           SQLIntegrityConstraintViolationException, NotFoundException {
       return ResponseEntity.ok(authenticationService.register(request, null));
   }
+
 
 
 @PostMapping("/registerViaHoB")
@@ -72,23 +73,74 @@ public ResponseEntity<AuthenticationResponse> registerSupervisorOrStudentViaHob(
         throw new AccessDeniedException("Only head of branch can register users");
     }
  //c ame donne des erreur ici dans le role just a ajouté les erreur dans les authorizations
-    */
+
 
     return ResponseEntity.ok(authenticationService.registerSuperVisorOrStudentViaHeadOfBranch(request, null));
-}
+} */
+  @PostMapping("/registerViaHoB")
+  public ResponseEntity<AuthenticationResponse> registerSupervisorOrStudentViaHob(
+          @RequestBody RegisterDTO request,
+          @RequestHeader("Authorization") String authHeader) throws Exception {
 
-    @PostMapping("/authenticate")
+      String token = authHeader.replace("Bearer ", "");
+      String inscriptionNumber = jwtService.extractUsername(token);
+      User currentUser = userRepository.findByInscriptionNumber(inscriptionNumber)
+              .orElseThrow(() -> new AccessDeniedException("Accès refusé"));
+
+      if (!currentUser.getRoles().stream()
+              .anyMatch(r -> r.getName().equals(RoleName.ROLE_HEAD_OF_BRANCH.name()))) {
+          throw new AccessDeniedException("Autorisation insuffisante");
+      }
+
+      return ResponseEntity.ok(authenticationService.registerSuperVisorOrStudentViaHeadOfBranch(request, null));
+  }
+    /*@PostMapping("/authenticate")
     public ResponseEntity<AuthenticationResponse> authenticate(@RequestBody AuthenticationDTO request)throws JwtException{
         return ResponseEntity.ok(authenticationService.authenticate(request));
 
+    }*/
+@PostMapping("/authenticate")
+    public ResponseEntity<?> authenticate(@RequestBody AuthenticationDTO request) {
+        try {
+            AuthenticationResponse response = authenticationService.authenticate(request);
+
+
+            if (response.isPasswordChangeRequired()) {
+                return ResponseEntity.status(HttpStatus.OK) // Code 200 au lieu de 205
+                        .body(response);
+            }
+
+            return ResponseEntity.ok(response); // Code 200 avec JWT normal
+
+        } catch (BadCredentialsException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new JsonResponse(401, "Invalid credentials"));
+        }
     }
+
+
+
+    @PostMapping("/change-initial-password")
+    public ResponseEntity<JsonResponse> changeInitialPassword(
+            @RequestBody PasswordChangeDTO dto) {
+
+        authenticationService.changeInitialPassword(dto);
+        return ResponseEntity.ok(
+                new JsonResponse(200, "Your password has been changed successfully")
+        );
+    }
+
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<JsonResponse> forgotPassword(@RequestBody String email){
-        authenticationService.forgotPassword(email);
-        return new ResponseEntity<JsonResponse>(new JsonResponse(200, "A security reset token has been sent to you're email"), HttpStatus.OK);
+    public ResponseEntity<?> forgotPassword(@RequestBody String email) {
+        try {
+            authenticationService.forgotPassword(email);
+            return ResponseEntity.ok(new JsonResponse(200, "A security reset token has been sent to you're email"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new JsonResponse(404, "User not found"));
+        }
     }
-
     @PostMapping("/validate-token")
     public ResponseEntity<JsonResponse> validateResetToken(@RequestParam("token") String token,
             @RequestParam("email") String email){
@@ -97,10 +149,9 @@ public ResponseEntity<AuthenticationResponse> registerSupervisorOrStudentViaHob(
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<JsonResponse> resetPassword(@RequestParam("token") String token,
-            @RequestParam("password") String password){
-        authenticationService.resetPassword(token,password);
-        return new ResponseEntity<JsonResponse>(new JsonResponse(200, "Password has been reset"), HttpStatus.OK);
+    public ResponseEntity<JsonResponse> resetPassword(@RequestBody PasswordResetRequest request) {
+        authenticationService.resetPassword(request.getToken(), request.getPassword());
+        return ResponseEntity.ok(new JsonResponse(200, "Password has been reset"));
     }
 
     @GetMapping("/verify")

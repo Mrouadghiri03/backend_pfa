@@ -132,17 +132,30 @@ public class User implements UserDetails {
     private String profileImage;
 
     @Override
+    /*public Collection<GrantedAuthority> getAuthorities() {
+        Set<GrantedAuthority> authorities = new HashSet<>();
+        for (Role role : roles) {
+            authorities.add(new SimpleGrantedAuthority(role.getName().toString()));
+        }
+        return authorities;
+    }*/ // i a modifie
+
     public Collection<GrantedAuthority> getAuthorities() {
         Set<GrantedAuthority> authorities = new HashSet<>();
         for (Role role : roles) {
             authorities.add(new SimpleGrantedAuthority(role.getName().toString()));
+        }
+        if(!this.passwordChanged) {
+            authorities.add(new SimpleGrantedAuthority("FORCE_PASSWORD_CHANGE"));
         }
         return authorities;
     }
 
     @Override
     public String getUsername() {
-        return email;
+
+        // return email; i a change
+        return this.inscriptionNumber;
     }
 
     @Override
@@ -175,4 +188,14 @@ public class User implements UserDetails {
     // return result;
     // }
 
+    @Column(name = "password_changed", nullable = false)
+    private boolean passwordChanged = false;
+
+    public boolean isPasswordChanged() {
+        return passwordChanged;
+    }
+
+    public void setPasswordChanged(boolean passwordChanged) {
+        this.passwordChanged = passwordChanged;
+    }
 }
