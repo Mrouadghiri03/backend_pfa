@@ -2,12 +2,14 @@ package com.pfa.api.app.controller;
 
 import java.util.List;
 
+import com.pfa.api.app.auth.RegisterDTO;
 import com.pfa.api.app.repository.UserRepository;
 import com.pfa.api.app.security.JwtService;
 import com.pfa.api.app.util.UserUtils;
 import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,6 +27,8 @@ public class UserController {
 
     private final UserService userService;
     private final  UserRepository userRepository;
+    private final JwtService jwtService;
+
     @PostMapping("/{userId}/uploadProfileImage")
     public ResponseEntity<UserResponseDTO> uploadProfileImage(@PathVariable Long userId,
             @RequestParam("image") MultipartFile imageFile) {
@@ -112,6 +116,40 @@ public class UserController {
     public ResponseEntity<List<UserResponseDTO>> getStudents() {
         List<UserResponseDTO> supervisors = userService.getStudents();
         return ResponseEntity.ok(supervisors);
+    }
+    @GetMapping("/me")
+    public ResponseEntity<UserDTO> getCurrentUser(//ici je peux utiliser userDTP ou bien UserResponseDTO
+            @RequestHeader("Authorization") String authHeader) {
+
+        // 1. Extraire le token du header
+        String token = authHeader.substring(7); // Enlève "Bearer "
+
+        // 2. Récupérer l'email depuis le token JWT
+        String userEmail = jwtService.extractUsername(token);
+
+        // 3. Chercher l'utilisateur dans la base
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        // 4. Convertir en DTO et retourner
+        UserDTO response = new UserDTO(
+               /* user.getFirstName(),
+                user.getLastName(),
+                user.getEmail(),
+                user.getCin(),
+                user.getInscriptionNumber(),
+                user.getBranch(),
+                user.getRoles()
+
+                */);
+        response.setFirstName(user.getFirstName());
+        response.setLastName(user.getLastName());
+        response.setEmail(user.getEmail());
+        response.setCin(user.getCin());
+        //response.setPassword(); c'est pas la peine t3zouha ila drto fiha cher
+        //c'est pas la peine car dejale mot de passe ne sera pas afficher comme l'autre data
+
+        return ResponseEntity.ok(response);
     }
 
 }

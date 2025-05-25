@@ -1,11 +1,17 @@
 package com.pfa.api.app.util;
 
+import com.pfa.api.app.auth.AuthenticationResponse;
 import com.pfa.api.app.entity.user.Role;
 import com.pfa.api.app.entity.user.RoleName;
 import com.pfa.api.app.entity.user.User;
+import com.pfa.api.app.repository.BranchRepository;
+import com.pfa.api.app.repository.ConfirmationRepository;
+import com.pfa.api.app.security.JwtService;
+import com.pfa.api.app.service.EmailService;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,17 +32,18 @@ public class CSVHelper {
             "email",
             "cin",
             "inscription_number",
-            "password",
+            //"password",
             "reset_code",
             "profile_image"
     };
+
 
     public static boolean hasCSVFormat(MultipartFile file) {
         return TYPE.equals(file.getContentType());
     }
 
 
-    public static List<User> csvToStudents(InputStream is,PasswordEncoder passwordEncoder) throws IOException {
+    public static List<User> csvToStudents(InputStream is,PasswordEncoder passwordEncoder,EmailService emailService) throws IOException {
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
             // Modification ici pour utiliser la ; comme délimiteur
@@ -57,7 +64,7 @@ public class CSVHelper {
 
             CSVParser parser = new CSVParser(reader, format);
             List<User> students = new ArrayList<>();
-
+            String password="Ensao25";
             for (CSVRecord record : parser) {
                 try {
                     User user = new User();
@@ -66,7 +73,7 @@ public class CSVHelper {
                     user.setEmail(record.get("email").trim());
                     user.setCin(record.get("cin").trim());
                     user.setInscriptionNumber(record.get("inscription_number").trim());
-                    user.setPassword(passwordEncoder.encode(record.get("password").trim()));
+                    user.setPassword(passwordEncoder.encode(password));
                     //passwordEncoder.encode(request.getPassword())
                  //car le role prends string et user prends un list des string
                     user.setRoles(roles);
@@ -74,6 +81,11 @@ public class CSVHelper {
                     user.setEnabled(true);
                     user.setResetCode(record.get("reset_code").trim());
                     user.setProfileImage(record.get("profile_image").trim());
+
+                    emailService.sendInformingEmailToNewUser(user,"Your account has been created , your password is "+password+", you can login now , and you change it ");
+                    //emailService.sendConfirmationEmail(user.getFirstName(), user.getEmail(), user.getConfirmation().getToken());
+
+
 
                     students.add(user);
 

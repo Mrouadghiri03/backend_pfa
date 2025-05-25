@@ -28,6 +28,9 @@ public class CSVServiceImp {
         @Autowired
         PasswordEncoder passwordEncoder;
 
+        @Autowired
+        EmailServiceImplementation emailServiceImplementation;
+
         public void save(MultipartFile file) {
             try {
                 System.out.println("Début du traitement du fichier: " + file.getOriginalFilename());
@@ -35,7 +38,7 @@ public class CSVServiceImp {
                 String content = new String(file.getBytes(), StandardCharsets.UTF_8);
                 System.out.println("Contenu brut:\n" + content);
 
-                List<User> students = CSVHelper.csvToStudents(file.getInputStream(),passwordEncoder);
+                List<User> students = CSVHelper.csvToStudents(file.getInputStream(),passwordEncoder,emailServiceImplementation);
                 System.out.println("Nombre d'étudiants lus: " + students.size());
 
                 // Récupérer le rôle ROLE_STUDENT depuis la base de données
