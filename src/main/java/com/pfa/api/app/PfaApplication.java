@@ -77,6 +77,7 @@ CommandLineRunner initDatabaseWithUser(UserRepository userRepository,
 									   PasswordEncoder passwordEncoder) {
 	final String studentEmail = "islam.elkhadir23@ump.ac.ma".trim().toLowerCase();
 
+
 	return args -> {
 		userRepository.findByEmail(studentEmail).ifPresentOrElse(
 				user -> System.out.println("Utilisateur existant - ID: " + user.getId()),

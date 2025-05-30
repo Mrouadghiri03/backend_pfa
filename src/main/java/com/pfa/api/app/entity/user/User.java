@@ -155,7 +155,7 @@ public class User implements UserDetails {
     public String getUsername() {
 
         // return email; i a change
-        return this.inscriptionNumber;
+        return this.email;
     }
 
     @Override

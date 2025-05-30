@@ -236,7 +236,7 @@ public class AuthenticationService {
         return AuthenticationResponse.builder().token(jwtToken).build();
     }*/
     public AuthenticationResponse authenticate(AuthenticationDTO request) {
-        User user = userRepository.findByInscriptionNumber(request.getInscriptionNumber())
+        User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {

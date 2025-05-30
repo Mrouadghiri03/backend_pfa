@@ -11,6 +11,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AuthenticationDTO {
 
-    private String inscriptionNumber;  // i a Remplace 'email' par 'inscriptionNumber'
+    private String email;  // i a Remplace 'email' par 'inscriptionNumber'
     private String password;
 }

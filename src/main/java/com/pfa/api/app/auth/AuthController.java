@@ -77,7 +77,7 @@ public ResponseEntity<AuthenticationResponse> registerSupervisorOrStudentViaHob(
 
     return ResponseEntity.ok(authenticationService.registerSuperVisorOrStudentViaHeadOfBranch(request, null));
 } */
-  @PostMapping("/registerViaHoB")
+ /* @PostMapping("/registerViaHoB")
   public ResponseEntity<AuthenticationResponse> registerSupervisorOrStudentViaHob(
           @RequestBody RegisterDTO request,
           @RequestHeader("Authorization") String authHeader) throws Exception {
@@ -91,6 +91,29 @@ public ResponseEntity<AuthenticationResponse> registerSupervisorOrStudentViaHob(
               .anyMatch(r -> r.getName().equals(RoleName.ROLE_HEAD_OF_BRANCH.name()))) {
           throw new AccessDeniedException("Autorisation insuffisante");
       }
+
+      return ResponseEntity.ok(authenticationService.registerSuperVisorOrStudentViaHeadOfBranch(request, null));
+  }
+
+  */
+  @PostMapping("/registerViaHoB")
+  public ResponseEntity<AuthenticationResponse> registerSupervisorOrStudentViaHob(
+          @RequestBody RegisterDTO request,
+          @RequestHeader("Authorization") String authHeader) throws
+          SQLIntegrityConstraintViolationException, NotFoundException {
+
+      // Vérification de l'authentification
+      String token = authHeader.replace("Bearer ", "");// on prends ici le token
+      String email = jwtService.extractUsername(token);//extraire le token
+      Optional<User> currentUser = userRepository.findByEmail(email);//recupere le user connecté ; merci a yassine cteait un fonction deja implémenté par lui
+
+      // Vérification des droits
+   /* if(!currentUser.getRoles().stream().anyMatch(r ->
+            r.getName().equals(RoleName.ROLE_HEAD_OF_BRANCH.name()))) {
+        throw new AccessDeniedException("Only head of branch can register users");
+    }
+ //c ame donne des erreur ici dans le role just a ajouté les erreur dans les authorizations
+    */
 
       return ResponseEntity.ok(authenticationService.registerSuperVisorOrStudentViaHeadOfBranch(request, null));
   }
@@ -120,7 +143,7 @@ public ResponseEntity<AuthenticationResponse> registerSupervisorOrStudentViaHob(
 
 
 
-    @PostMapping("/change-initial-password")
+    @PutMapping("/change-initial-password")
     public ResponseEntity<JsonResponse> changeInitialPassword(
             @RequestBody PasswordChangeDTO dto) {
 
