@@ -94,7 +94,7 @@ public String generateToken(Map<String, Object> extraClaims, UserDetails userDet
         claims.put("passwordChange", true);
         return Jwts.builder()
                 .setClaims(claims)
-                .setSubject(user.getInscriptionNumber())
+                .setSubject(user.getEmail())//jai changer pour email
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 15 * 60 * 1000))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
@@ -106,12 +106,12 @@ public String generateToken(Map<String, Object> extraClaims, UserDetails userDet
         if(!claims.containsKey("passwordChange")) {
             throw new JwtException("Invalid token type");
         }
-        return userRepository.findByInscriptionNumber(claims.getSubject())
+        return userRepository.findByEmail(claims.getSubject())//jai changer pour email
                 .orElseThrow(() -> new JwtException("User not found"));
     }
     public String generateTempToken(User user) {
         return Jwts.builder()
-                .setSubject(user.getInscriptionNumber())
+                .setSubject(user.getEmail())//jai changer pour email
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 15 * 60 * 1000)) // 15min
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256) // Utilisez getSigningKey() au lieu de SECRET_KEY
@@ -120,7 +120,7 @@ public String generateToken(Map<String, Object> extraClaims, UserDetails userDet
 
     public User validateTempToken(String token) {
         Claims claims = extractAllClaims(token); // Utilisez la méthode existante
-        return userRepository.findByInscriptionNumber(claims.getSubject())
+        return userRepository.findByEmail(claims.getSubject())//jai changer pur email
                 .orElseThrow(() -> new JwtException("Token invalide"));
     }
 
