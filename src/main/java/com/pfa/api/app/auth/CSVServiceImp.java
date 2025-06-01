@@ -1,7 +1,6 @@
-package com.pfa.api.app.service.implementation;
+package com.pfa.api.app.auth;
 
 import com.pfa.api.app.entity.user.Role;
-import com.pfa.api.app.entity.user.RoleName;
 import com.pfa.api.app.entity.user.User;
 import com.pfa.api.app.repository.RoleRepository;
 import com.pfa.api.app.repository.UserRepository;
@@ -12,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 

@@ -26,6 +26,8 @@ public class SecurityConfig {
             "/api/auth/authenticate",
             "/api/auth/change-password",
             "/api/auth/change-initial-password",
+            "/api/auth/registerViaHoB",
+            "/api/auth/create-students-list",
             "/api/auth/forgot-password",
             "/api/auth/reset-password",
             "/api/projects/accept*",

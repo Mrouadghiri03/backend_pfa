@@ -89,6 +89,7 @@ CommandLineRunner initDatabaseWithUser(UserRepository userRepository,
 
 						// 2. Création de l'utilisateur
 						User newUser = User.builder()
+
 								.firstName("Test")
 								.lastName("Student")
 								.email(studentEmail)

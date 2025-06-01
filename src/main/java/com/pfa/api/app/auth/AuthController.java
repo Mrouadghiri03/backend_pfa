@@ -5,7 +5,9 @@ import java.util.Optional;
 
 import com.pfa.api.app.entity.user.RoleName;
 import com.pfa.api.app.entity.user.User;
+import com.pfa.api.app.message.ResponseMessage;
 import com.pfa.api.app.repository.UserRepository;
+import com.pfa.api.app.util.CSVHelper;
 import org.hibernate.PropertyValueException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
@@ -77,25 +79,30 @@ public ResponseEntity<AuthenticationResponse> registerSupervisorOrStudentViaHob(
 
     return ResponseEntity.ok(authenticationService.registerSuperVisorOrStudentViaHeadOfBranch(request, null));
 } */
- /* @PostMapping("/registerViaHoB")
+  @PostMapping("/registerViaHoB")
   public ResponseEntity<AuthenticationResponse> registerSupervisorOrStudentViaHob(
           @RequestBody RegisterDTO request,
-          @RequestHeader("Authorization") String authHeader) throws Exception {
+          @RequestHeader("Authorization") String authHeader) throws SQLIntegrityConstraintViolationException, NotFoundException {
 
+      // 1. Extraction et vérification du token
       String token = authHeader.replace("Bearer ", "");
-      String inscriptionNumber = jwtService.extractUsername(token);
-      User currentUser = userRepository.findByInscriptionNumber(inscriptionNumber)
-              .orElseThrow(() -> new AccessDeniedException("Accès refusé"));
+      String email = jwtService.extractUsername(token);
+      User currentUser = userRepository.findByEmail(email)
+              .orElseThrow(() -> new NotFoundException());
 
-      if (!currentUser.getRoles().stream()
-              .anyMatch(r -> r.getName().equals(RoleName.ROLE_HEAD_OF_BRANCH.name()))) {
-          throw new AccessDeniedException("Autorisation insuffisante");
+      // 2. Vérification des droits (MODIFIÉ)
+      boolean isHeadOfBranch = currentUser.getRoles().stream()
+              .anyMatch(role -> role.getName().equals(RoleName.ROLE_HEAD_OF_BRANCH.name()));
+
+      if (!isHeadOfBranch) {
+          throw new AccessDeniedException("Only head of branch can register users");
       }
 
+      // 3. Exécution si autorisé
       return ResponseEntity.ok(authenticationService.registerSuperVisorOrStudentViaHeadOfBranch(request, null));
   }
 
-  */
+ /*
   @PostMapping("/registerViaHoB")
   public ResponseEntity<AuthenticationResponse> registerSupervisorOrStudentViaHob(
           @RequestBody RegisterDTO request,
@@ -114,9 +121,10 @@ public ResponseEntity<AuthenticationResponse> registerSupervisorOrStudentViaHob(
     }
  //c ame donne des erreur ici dans le role just a ajouté les erreur dans les authorizations
     */
-
+/*
       return ResponseEntity.ok(authenticationService.registerSuperVisorOrStudentViaHeadOfBranch(request, null));
   }
+  */
     /*@PostMapping("/authenticate")
     public ResponseEntity<AuthenticationResponse> authenticate(@RequestBody AuthenticationDTO request)throws JwtException{
         return ResponseEntity.ok(authenticationService.authenticate(request));
@@ -236,4 +244,73 @@ public ResponseEntity<AuthenticationResponse> registerSupervisorOrStudentViaHob(
         return new ResponseEntity<JsonResponse>(new JsonResponse(200, "The user is rejected ,he can't login now"), HttpStatus.OK);
 
     }
+
+   @Autowired
+    private CSVServiceImp fileService;
+/*
+
+    @PostMapping("/create-students-list")
+    public ResponseEntity<ResponseMessage> uploadFile(@RequestParam("file") MultipartFile file) {
+        String message = "";
+        System.out.println("1 ok");
+        if (CSVHelper.hasCSVFormat(file)) {
+            System.out.println("2 ok");
+
+            try {
+                System.out.println("3 ok");
+
+                fileService.save(file);
+                System.out.println("4 ok");
+
+                message = "Uploaded the file successfully: " + file.getOriginalFilename();
+                return ResponseEntity.status(HttpStatus.OK).body(new ResponseMessage(message));
+            } catch (Exception e) {
+                System.out.println("5 ok");
+
+                message = "Could not upload the file: " + file.getOriginalFilename() + "!";
+                return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(new ResponseMessage(message));
+            }
+        }
+
+        message = "Please upload a csv file!";
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseMessage(message));
+    }
+
+  */
+ @PostMapping("/create-students-list")
+ public ResponseEntity<ResponseMessage> uploadFile(
+         @RequestParam("file") MultipartFile file,
+         @RequestHeader("Authorization") String authHeader) throws SQLIntegrityConstraintViolationException, NotFoundException {
+
+     // 1. Extraction et vérification du token
+     String token = authHeader.replace("Bearer ", "");
+     String email = jwtService.extractUsername(token);
+     User currentUser = userRepository.findByEmail(email)
+             .orElseThrow(() -> new NotFoundException());
+
+     // 2. Vérification des droits (MODIFIÉ)
+     boolean isHeadOfBranch = currentUser.getRoles().stream()
+             .anyMatch(role -> role.getName().equals(RoleName.ROLE_HEAD_OF_BRANCH.name()));
+     if (!isHeadOfBranch) {
+         throw new AccessDeniedException("Only head of branch can upload student lists");
+     }
+
+     // 3. Traitement du fichier si autorisé
+     String message = "";
+     if (CSVHelper.hasCSVFormat(file)) {
+         try {
+             fileService.save(file);
+             message = "Uploaded the file successfully: " + file.getOriginalFilename();
+             return ResponseEntity.ok(new ResponseMessage(message));
+         } catch (Exception e) {
+             message = "Could not upload the file: " + file.getOriginalFilename() + "!";
+             return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED)
+                     .body(new ResponseMessage(message));
+         }
+     }
+
+     message = "Please upload a csv file!";
+     return ResponseEntity.badRequest().body(new ResponseMessage(message));
+ }
+
 }

@@ -63,6 +63,7 @@ public class CSVHelper {
                     User user = new User();
                     user.setFirstName(record.get("first_name").trim());
                     user.setLastName(record.get("last_name").trim());
+                    user.setPasswordChanged(false);
                     user.setEmail(record.get("email").trim());
                     user.setCin(record.get("cin").trim());
                     user.setInscriptionNumber(record.get("inscription_number").trim());
