@@ -29,8 +29,8 @@ public class CSVHelper {
             "cin",
             "inscription_number",
            // "password", to generate the commun password
-            "reset_code",
-            "profile_image"
+           // "reset_code",
+            //"profile_image"
     };
 
     public static boolean hasCSVFormat(MultipartFile file) {
@@ -76,8 +76,8 @@ public class CSVHelper {
                     user.setRoles(roles);
 
                     user.setEnabled(true);
-                    user.setResetCode(record.get("reset_code").trim());
-                    user.setProfileImage(record.get("profile_image").trim());
+                   // user.setResetCode(record.get("reset_code").trim());
+                   // user.setProfileImage(record.get("profile_image").trim());
                     user.setPasswordChanged(false);
 
                     students.add(user);
