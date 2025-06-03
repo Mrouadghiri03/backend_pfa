@@ -35,7 +35,8 @@ public class SecurityConfig {
             "/swagger-ui.html",
             "/swagger-ui/**",
             "/v3/api-docs/**",
-            "/uploads/user_photos/**"
+            "/uploads/user_photos/**",
+            "/api/v1/diagrams/generate-from-text"
     };
 
     @Bean

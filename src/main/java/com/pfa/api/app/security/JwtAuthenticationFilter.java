@@ -89,6 +89,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private boolean isPermittedEndpoint(String requestURI) {
         System.out.println(requestURI);
         return requestURI.startsWith("/api/auth/") || requestURI.startsWith("/api/projects/accept")
-                ||requestURI.startsWith("/swagger-ui",0) || requestURI.startsWith("/v3/api-docs",0 );
+                ||requestURI.startsWith("/swagger-ui",0) || requestURI.startsWith("/v3/api-docs",0 ) || requestURI.equals("/api/v1/diagrams/generate-from-text");
+
     }
 }
