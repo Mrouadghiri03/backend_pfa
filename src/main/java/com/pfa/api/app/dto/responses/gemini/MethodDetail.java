@@ -8,7 +8,7 @@ import java.util.List;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MethodDetail {
-    private String visibility; // e.g., "public", "private", "protected"
+    private String visibility;
     private String name;
     private List<ParameterDetail> parameters;
     private String returnType;

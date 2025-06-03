@@ -9,7 +9,7 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ClassDetail {
     private String name;
-    private String stereotype; // e.g., "interface", "abstract"
+    private String stereotype;
     private List<AttributeDetail> attributes;
     private List<MethodDetail> methods;
 }

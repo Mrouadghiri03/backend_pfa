@@ -7,11 +7,11 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-@JsonIgnoreProperties(ignoreUnknown = true) // Important for flexibility with Gemini's output
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class GeminiResponse {
-    @JsonProperty("classes") // Ensure this matches the key in Gemini's JSON output
+    @JsonProperty("classes")
     private List<ClassDetail> classes;
 
-    @JsonProperty("relationships") // Ensure this matches the key in Gemini's JSON output
+    @JsonProperty("relationships")
     private List<RelationshipDetail> relationships;
 }

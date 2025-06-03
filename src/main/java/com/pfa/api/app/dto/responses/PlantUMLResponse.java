@@ -9,5 +9,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class PlantUMLResponse {
     private String plantUmlCode;
-    private String message; // For any additional messages or warnings
+    private String message;
 }

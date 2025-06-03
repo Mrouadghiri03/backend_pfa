@@ -6,7 +6,7 @@ import lombok.Data;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AttributeDetail {
-    private String visibility; // e.g., "public", "private", "protected"
+    private String visibility;
     private String name;
     private String type;
 }
