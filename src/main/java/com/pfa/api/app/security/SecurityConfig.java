@@ -41,7 +41,8 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/uploads/user_photos/**",
-            "/api/v1/diagrams/generate-from-text"
+            "/api/v1/diagrams/generate-from-text",
+            "/api/v1/cdc/generate"
     };
 
     /*@Bean
@@ -71,9 +72,18 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Utilisez la méthode dédiée
+              /*  .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Utilisez la méthode dédiée
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(WHITE_LIST).permitAll()
+                        .anyRequest().authenticated()
+                )
+
+               */
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.POST, "/api/v1/cdc/generate").permitAll() // Autorisation explicite
                         .requestMatchers(WHITE_LIST).permitAll()
                         .anyRequest().authenticated()
                 )
