@@ -20,4 +20,17 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .maxAge(3600);
     }
 
+
+    /*@Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/api/**") // Tous les endpoints sous /api
+                .allowedOrigins("http://localhost:5173", "http://127.0.0.1:5173")
+                .allowedMethods("*")
+                .allowedHeaders("*")
+                .allowCredentials(true)
+                .maxAge(3600);
+    }
+
+
+     */
 }
