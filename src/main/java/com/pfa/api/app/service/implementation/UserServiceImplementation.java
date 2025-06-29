@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,6 +23,7 @@ import com.pfa.api.app.util.FileUtils;
 
 import lombok.RequiredArgsConstructor;
 
+
 @Service
 @RequiredArgsConstructor
 public class UserServiceImplementation implements UserService {
@@ -29,7 +31,6 @@ public class UserServiceImplementation implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-
     @Value("${upload.directory.photos}")
     private String USER_IMAGES_DIRECTORY;
 
@@ -46,11 +47,50 @@ public class UserServiceImplementation implements UserService {
     }
 
     @Override
-    public UserResponseDTO getUser(Long userId) {
+  /*  public UserResponseDTO getUserById(Long userId) {
         User user = userRepository.findById(userId).orElse(null);
         return UserResponseDTO.fromEntity(user);
     }
 
+   */
+    public UserResponseDTO getUserById(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        UserResponseDTO responseDTO = new UserResponseDTO();
+        responseDTO.setId(user.getId());
+        responseDTO.setFirstName(user.getFirstName());
+        responseDTO.setLastName(user.getLastName());
+        responseDTO.setEmail(user.getEmail());
+        responseDTO.setCin(user.getCin());
+        responseDTO.setInscriptionNumber(user.getInscriptionNumber());
+        responseDTO.setEnabled(user.isEnabled()); // or getEnabled() depending on your User class
+
+        // Assuming these are relationships in your User entity
+        if (user.getStudiedBranch() != null) {
+            responseDTO.setStudiedBranchId(user.getStudiedBranch().getId());
+        }
+
+        if (user.getBranch() != null) {
+            responseDTO.setBranchId(user.getBranch().getId());
+        }
+
+        responseDTO.setAuthorities(user.getAuthorities());
+
+        if (user.getTeam() != null) {
+            responseDTO.setTeamId(user.getTeam().getId());
+        }
+
+        if (user.getTeamInResponsibility() != null) {
+            responseDTO.setTeamInResponsibilityId(user.getTeamInResponsibility().getId());
+        }
+
+
+
+        responseDTO.setProfileImage(user.getProfileImage());
+
+        return responseDTO;
+    }
     @Override
     public List<UserResponseDTO> getAllUsers() {
         List<User> users = userRepository.findAll();

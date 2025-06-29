@@ -36,9 +36,6 @@ public class UserResponseDTO {
         private List<Long> projectsInSupervisionId;
         private String profileImage;
         private String token;
-
-        // You can include other fields as needed
-
         public static UserResponseDTO fromEntity(User user) {
                 return UserResponseDTO.builder()
                                 .id(user.getId())

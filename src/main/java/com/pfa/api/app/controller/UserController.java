@@ -89,7 +89,17 @@ public class UserController {
         return ResponseEntity.ok(updatedUser);
     }
 
-    @PutMapping("/{userId}")
+
+    @GetMapping("/{userId}")
+    public ResponseEntity<UserResponseDTO> getUserById(@PathVariable Long userId) {
+        try {
+            UserResponseDTO user = userService.getUserById(userId);
+            return ResponseEntity.ok(user);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    @PutMapping("/update/{userId}")
     public ResponseEntity<UserResponseDTO> updateUser(@PathVariable Long userId, @RequestBody UserDTO userDto) {
         try {
 

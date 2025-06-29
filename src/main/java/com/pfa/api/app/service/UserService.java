@@ -11,9 +11,10 @@ import com.pfa.api.app.dto.responses.UserResponseDTO;
 import com.pfa.api.app.entity.user.User;
 
 public interface UserService {
-    UserResponseDTO getUser(Long userId);
+    UserResponseDTO getUserById(Long userId);
 
     List<UserResponseDTO> getAllUsers();
+
 
     List<User> getUsersByBranch(Long branch);
 
