@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collections;
+
 @RestController
 @RequestMapping("/api/assignments")
 @RequiredArgsConstructor
@@ -32,9 +34,21 @@ public class AssignmentController {
         }
     }
 
-    @GetMapping
+   /* @GetMapping
     public ResponseEntity<AssignmentResponseDTO> getAssignmentByYear(@RequestParam String academicYear) throws NotFoundException {
         Assignment assignment = assignmentService.getAssignmentByAcademicYear(academicYear);
         return ResponseEntity.ok(AssignmentResponseDTO.fromEntity(assignment));
     }
+
+    */
+   @GetMapping
+   public ResponseEntity<?> getAssignmentByYear(@RequestParam String academicYear) {
+       try {
+           Assignment assignment = assignmentService.getAssignmentByAcademicYear(academicYear);
+           return ResponseEntity.ok(AssignmentResponseDTO.fromEntity(assignment));
+       } catch (NotFoundException e) {
+           // Retourne un objet vide avec status 200 si non trouvé
+           return ResponseEntity.ok(Collections.emptyMap());
+       }
+   }
 }
