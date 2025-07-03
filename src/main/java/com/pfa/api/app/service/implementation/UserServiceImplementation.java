@@ -152,6 +152,13 @@ public class UserServiceImplementation implements UserService {
         List<User> supervisors = userRepository.findByRoleName(RoleName.ROLE_SUPERVISOR.name());
         return supervisors.stream().map(UserResponseDTO::fromEntity).collect(Collectors.toList());
     }
+    @Override
+    public List<Long> getHeadsOFBranchIds(){
+        List<User> supervisors = userRepository.findByRoleName(RoleName.ROLE_HEAD_OF_BRANCH.name());
+        return supervisors.stream()
+                .map(User::getId) // Extrait seulement l'ID
+                .collect(Collectors.toList());
+    }
 
     @Override
     public ResponseEntity<byte[]> downloadProfileImage(Long userId) throws IOException {

@@ -26,6 +26,8 @@ public interface UserService {
 
     List<UserResponseDTO> getSupervisors();
 
+    List<Long> getHeadsOFBranchIds();
+
     List<UserResponseDTO> getStudents();
 
 }
