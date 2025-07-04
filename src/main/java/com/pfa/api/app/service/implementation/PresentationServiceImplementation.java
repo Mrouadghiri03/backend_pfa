@@ -1,6 +1,7 @@
 package com.pfa.api.app.service.implementation;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -43,7 +44,6 @@ public class PresentationServiceImplementation implements PresentationService {
         Team team = presentation.getTeam();
         team.setPresentation(presentation);
         teamRepository.save(team);
-
         Long idOfSender = team.getMembers().get(0).getStudiedBranch().getHeadOfBranch().getId();
         for (User jury : presentation.getJuryMembers()) {
             Notification notification = Notification.builder()
@@ -59,8 +59,32 @@ public class PresentationServiceImplementation implements PresentationService {
             notificationRepository.save(notification);
             emailService.sendInformingEmail(jury, "You have been assigned as a jury member for a presentation on "
                     + presentation.getStartTime() + " in room " + presentation.getRoomNumber()
+
                     + " you can now check it and contact the head of branch to change it,check more infos in the app.\n");
+            System.out.println("start: "+presentation.getStartTime()+" end:"+presentation.getEndTime());
         }
+//au cas ou w93 mochkil f backend 7aydo hadi dyal tsift email l team memebers ; 7it ana ann3s dorki w 3yit mafia li ytest
+        List<User> currentMembers = presentation.getTeam().getMembers();
+        for (User member : currentMembers) {
+            Notification notification = Notification.builder()
+                    .user(member)
+                    .creationDate(new Date())
+                    .type("PROJECT")
+                    .description("You have been assigned as a jury member for a presentation on "
+                            + presentation.getStartTime() + " in room " + presentation.getRoomNumber()
+                            + " you can now check it and contact the head of branch to change it,check more infos in the calendar.\n")
+                    .idOfSender(idOfSender)
+                    .build();
+
+            notificationRepository.save(notification);
+            emailService.sendInformingEmail(member, "You have been assigned as a jury member for a presentation on "
+                    + presentation.getStartTime() + " in room " + presentation.getRoomNumber()
+
+                    + " check more infos in the app.\n");
+            System.out.println("start: "+presentation.getStartTime()+" end:"+presentation.getEndTime());
+        }
+        // hna fou9 au cas ou kan mochkil 7aydoha khliw email ghir l jury
+
         return PresentationResponseDTO.fromEntity(presentation);
     }
 

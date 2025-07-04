@@ -29,6 +29,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -155,7 +156,7 @@ public class PresentationController {
     }
 
      */
-   @PostMapping("/generate-presentations")
+  /* @PostMapping("/generate-presentations")
    public ResponseEntity<?> generatePresentations() {
        // Configuration des horaires
        LocalTime[] timeSlots = {
@@ -235,7 +236,104 @@ public class PresentationController {
         return date.toString() + " " +
                 slots[slotIndex].toString() + "-" +
                 slots[slotIndex+1].toString();
+    }*/
+
+    @PostMapping("/generate-presentations")
+    @PreAuthorize("hasRole('ROLE_HEAD_OF_BRANCH')")
+    public ResponseEntity<?> generatePresentations(
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
+            @RequestParam(defaultValue = "BR49") String roomNumber) {
+
+        // Configuration des créneaux horaires
+        LocalTime[] timeSlots = {
+                LocalTime.of(10, 0), LocalTime.of(12, 0),  // Matin: 10h-12h
+                LocalTime.of(14, 0), LocalTime.of(16, 0),  // Après-midi: 14h-16h
+                LocalTime.of(16, 0), LocalTime.of(18, 0)   // Fin d'après-midi: 16h-18h
+        };
+
+        // Validation de la date
+        if (startDate.isBefore(LocalDate.now())) {
+            return ResponseEntity.badRequest()
+                    .body(new JsonResponse(400, "La date de début doit être aujourd'hui ou dans le futur"));
+        }
+
+        LocalDate currentDate = startDate;
+        int slotIndex = 0;
+
+        List<TeamResponseDTO> teams = teamServiceImplementation.getAllTeams("2024/2025");
+        List<Long> createdIds = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+
+        for (TeamResponseDTO team : teams) {
+            try {
+                // Calcul du créneau actuel
+                int startIndex = slotIndex % 6;
+                int endIndex = startIndex + 1;
+
+                LocalDateTime currentStart = LocalDateTime.of(currentDate, timeSlots[startIndex]);
+                LocalDateTime currentEnd = LocalDateTime.of(currentDate, timeSlots[endIndex]);
+
+                // Préparation des données
+                ProjectResponseDTO project = team.getProject();
+                List<Long> juryIds = new ArrayList<>();
+                juryIds.addAll(project.getSupervisorIds());
+                juryIds.addAll(userServiceImplementation.getHeadsOFBranchIds());
+
+                PresentationDTO dto = PresentationDTO.builder()
+                        .teamId(team.getId())
+                        .juryMemberIds(juryIds)
+                        .startTime(Date.from(currentStart.atZone(ZoneId.systemDefault()).toInstant()))
+                        .endTime(Date.from(currentEnd.atZone(ZoneId.systemDefault()).toInstant()))
+                        .roomNumber(roomNumber)
+                        .build();
+
+                // Création de la présentation
+                PresentationResponseDTO created = presentationService.addPresentation(dto);
+                createdIds.add(created.getId());
+
+                // Passage au créneau suivant
+                slotIndex += 2;
+                if (slotIndex >= 6) {
+                    slotIndex = 0;
+                    currentDate = currentDate.plusDays(1);
+                }
+
+            } catch (Exception e) {
+                errors.add("Équipe " + team.getId() + ": " + e.getMessage());
+                // Passer au créneau suivant même en cas d'erreur
+                slotIndex += 2;
+                if (slotIndex >= 6) {
+                    slotIndex = 0;
+                    currentDate = currentDate.plusDays(1);
+                }
+            }
+        }
+
+        // Construction de la réponse
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "SUCCESS");
+        response.put("startDateUsed", startDate.toString());
+        response.put("createdPresentations", createdIds.size());
+        response.put("errors", errors);
+        response.put("nextAvailableSlot", getNextSlotInfo(currentDate, slotIndex, timeSlots));
+        response.put("generatedIds", createdIds);
+
+        return ResponseEntity.ok(response);
     }
+
+    private String getNextSlotInfo(LocalDate date, int slotIndex, LocalTime[] slots) {
+        if (slotIndex >= 6) {
+            slotIndex = 0;
+            date = date.plusDays(1);
+        }
+        return String.format("%s %02d:%02d-%02d:%02d",
+                date.toString(),
+                slots[slotIndex].getHour(),
+                slots[slotIndex].getMinute(),
+                slots[slotIndex+1].getHour(),
+                slots[slotIndex+1].getMinute());
+    }
+
         @GetMapping
         public ResponseEntity<List<PresentationResponseDTO>> getAllPresentations() {
                 return ResponseEntity.ok(presentationService.getAllPresentations());
